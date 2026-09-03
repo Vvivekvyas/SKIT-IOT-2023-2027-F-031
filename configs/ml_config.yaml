@@ -1,0 +1,25 @@
+project:
+  name: hybrid-ml-ids
+
+datasets:
+  cicids2017:
+    enabled: true
+  cic_iot2023:
+    enabled: true
+
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+
+models:
+  baseline: true
+  ft_transformer: true
+  autoencoder: true
+  hybrid: true
+
+evaluation:
+  metrics:
+    - accuracy
+    - precision
+    - recall
+    - f1_score

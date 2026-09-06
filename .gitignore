@@ -1,0 +1,36 @@
+# Raw datasets
+data/raw/
+*.csv
+
+# Processed datasets
+data/processed/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML artifacts
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.h5
+*.keras
+
+# Logs
+*.log

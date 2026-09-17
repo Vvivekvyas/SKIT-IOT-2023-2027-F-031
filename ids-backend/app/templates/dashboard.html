@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}IDS Dashboard{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto py-10 px-4 space-y-8">
+    <h1 class="text-2xl font-bold">Intrusion Detection Dashboard</h1>
+
+    <section>
+        <h2 class="text-lg font-semibold mb-2 text-red-600">Active Alerts</h2>
+        <ul id="alerts-list" class="space-y-2"></ul>
+    </section>
+
+    <section>
+        <h2 class="text-lg font-semibold mb-2">Traffic Records</h2>
+        <table class="w-full text-sm bg-white shadow rounded overflow-hidden">
+            <thead class="bg-slate-100 text-left">
+                <tr>
+                    <th class="p-2">Time</th>
+                    <th class="p-2">Source IP</th>
+                    <th class="p-2">Protocol</th>
+                    <th class="p-2">Prediction</th>
+                    <th class="p-2">Confidence</th>
+                </tr>
+            </thead>
+            <tbody id="records-body"></tbody>
+        </table>
+    </section>
+</div>
+<script>
+async function loadData() {
+    const [records, alerts] = await Promise.all([
+        fetch("/api/v1/traffic/records").then(r => r.json()),
+        fetch("/api/v1/traffic/alerts").then(r => r.json()),
+    ]);
+
+    document.getElementById("records-body").innerHTML = records.map(r => `
+        <tr class="border-t">
+            <td class="p-2">${new Date(r.created_at).toLocaleString()}</td>
+            <td class="p-2">${r.source_ip ?? "-"}</td>
+            <td class="p-2">${r.protocol ?? "-"}</td>
+            <td class="p-2 ${r.predicted_label === 'Normal' ? 'text-green-600' : 'text-red-600 font-semibold'}">${r.predicted_label}</td>
+            <td class="p-2">${(r.confidence * 100).toFixed(1)}%</td>
+        </tr>
+    `).join("");
+
+    document.getElementById("alerts-list").innerHTML = alerts.map(a => `
+        <li class="bg-red-50 border border-red-200 rounded p-3">${a.message}</li>
+    `).join("") || `<li class="text-slate-400">No active alerts.</li>`;
+}
+loadData();
+setInterval(loadData, 5000);
+</script>
+{% endblock %}

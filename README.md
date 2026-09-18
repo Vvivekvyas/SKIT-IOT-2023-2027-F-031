@@ -150,4 +150,4 @@ The system is developed and benchmarked on two benchmark intrusion detection dat
 
 - **Real-Time Stream Processing**: Integration with Apache Kafka or eBPF packet capture engines.
 - **Explainable AI (XAI)**: Integration of SHAP/LIME to explain attention weights and individual feature contributions to security analysts.
-- **Edge Deployment**: Model quantization and pruning (ONNX/TensorRT) for deployment on IoT gateways.
+- **Edge Deployment**: Model quantization and pruning (ONNX/TensorRT) for deployment on IoT gateways. 

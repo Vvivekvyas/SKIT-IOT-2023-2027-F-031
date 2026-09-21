@@ -1,8 +1,7 @@
 """
 Shared FastAPI dependencies: current-user extraction and role gating.
 Every non-public route in the API depends on `get_current_user` (or the
-role-gated wrappers below), per the security requirement that nothing is
-implicitly trusted.
+role-gated wrappers below).
 """
 import jwt
 from fastapi import Depends, HTTPException, status

@@ -5,9 +5,6 @@ Covers:
 - password hashing (argon2)
 - JWT access + refresh token creation/verification
 - role-based scope checks
-
-This is the concrete implementation of Week 1's "security requirements":
-short-lived access tokens, rotating refresh tokens, no plaintext secrets.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Literal

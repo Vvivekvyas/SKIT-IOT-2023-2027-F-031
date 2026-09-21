@@ -1,37 +1,48 @@
-# ids-api
+# ids-api — Week 4: Database schema + Pydantic models
 
-Week 1 deliverable — API scaffolding + working auth/security layer for the
-hybrid FT-Transformer + VAE IDS project.
+## What's new this week
+
+- Real SQLite database (SQLAlchemy) replacing Week 3's fake in-memory user dict
+- Tables: `User`, `Dataset`, `Prediction`
+- Pydantic schemas for dataset and prediction/alert endpoints
+- A seed script to set up the DB and a test login
 
 ## Run it
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env   # then set a real JWT_SECRET_KEY
+python -m app.db.seed  # creates tables + test user (run once)
 uvicorn app.main:app --reload
 ```
 
 Docs: http://localhost:8000/docs
 
+Test login: `analyst@example.com` / `changeme123`
+
 ## What's implemented
 
-- `POST /api/v1/auth/login` — real JWT issuance, argon2 password hashing,
-  rate-limited (5/min)
-- `POST /api/v1/auth/refresh` — refresh token rotation
-- `GET /api/v1/me` — example protected route using the shared auth dependency
+- `POST /api/v1/auth/login` — now queries the real `users` table
+- `POST /api/v1/auth/refresh` — token rotation, unchanged from Week 3
+- `GET /api/v1/me` — protected test route
 - `GET /health` — public health check
-- Role-based access control (`viewer` / `analyst` / `admin`) via
-  `app/core/deps.py::require_role`
-- CORS locked to `ALLOWED_ORIGINS`, no wildcard
-
-User lookup is a temporary in-memory dict (`app/api/v1/auth.py`) — swap for
-Pranjal's DB models in Week 2.
+- `app/models/` — SQLAlchemy table definitions (User, Dataset, Prediction)
+- `app/schemas/` — Pydantic request/response models for auth, datasets, predictions/alerts
 
 ## Layout
 
 ```
 app/
   core/       config, JWT + password hashing, auth dependency, rate limiter
-  api/v1/     versioned route modules (auth.py so far)
+  db/         database.py (engine/session), seed.py (setup script)
+  models/     SQLAlchemy table definitions
+  api/v1/     versioned route modules
   schemas/    Pydantic request/response models
 ```
+
+## Not yet wired up
+
+The `Dataset` and `Prediction` tables and schemas exist, but there are no
+endpoints reading/writing them yet — those land when the dataset-upload and
+prediction routes get built (later weeks, once the ML side has models to
+call). This week's job was just the schema + models.

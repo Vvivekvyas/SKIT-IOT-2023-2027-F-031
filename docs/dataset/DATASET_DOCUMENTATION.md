@@ -2,138 +2,928 @@
 
 ## 1. Purpose
 
-This document provides technical documentation for the benchmark datasets utilized to train, validate, and evaluate the **Hybrid ML Based Intrusion Detection System (IDS)**. It details dataset origins, attack class taxonomies, the end-to-end data pipeline, data leakage safeguards, and security measures.
+This document provides detailed technical documentation for the benchmark datasets utilized to train, validate, and evaluate the **Hybrid ML Based Intrusion Detection System (IDS)**. The primary objective of this documentation is to establish a reproducible and secure data-processing pipeline while clearly describing the origin, characteristics, attack taxonomy, preprocessing methodology, data partitioning strategy, leakage-prevention mechanisms, and dataset security controls.
+
+The IDS uses two complementary cybersecurity datasets:
+
+* **CICIDS2017** — representing modern enterprise network environments and conventional network attacks.
+* **CIC-IoT2023** — representing heterogeneous IoT and Industrial IoT environments with diverse devices and attack behaviors.
+
+Using both datasets allows the proposed hybrid architecture to be evaluated across different network environments and traffic characteristics.
+
+The complete data workflow consists of:
+
+1. Raw dataset acquisition.
+2. Dataset validation and integrity verification.
+3. CSV ingestion and schema validation.
+4. Data sanitization and duplicate removal.
+5. Handling of missing, infinite, and anomalous numerical values.
+6. Removal of non-generalizable identifiers.
+7. Train/validation/test partitioning.
+8. Training-only fitting of preprocessing transformations.
+9. Transformation of validation and test partitions.
+10. Conversion into engineered tensors suitable for the **VAE** and **FT-Transformer** components.
+11. Experiment tracking using dataset checksums and configuration files.
 
 ---
 
-## 2. CICIDS2017 Dataset
+# 2. CICIDS2017 Dataset
 
-### 2.1 Overview & Source
-- **Provider**: Canadian Institute for Cybersecurity (CIC), University of New Brunswick (UNB).
-- **Domain**: Modern enterprise network environments.
-- **Acquisition Protocol**: Captured using a B-Profile system covering realistic background user traffic (HTTP, HTTPS, FTP, SSH, Email) combined with synchronized attack profiles executed over five consecutive days.
-- **Format**: 8 CSV flow capture files extracted using CICFlowMeter, generating 78+ statistical network flow attributes.
+## 2.1 Overview & Source
 
-### 2.2 Attack Profiles & Class Distribution
+* **Provider:** Canadian Institute for Cybersecurity (CIC), University of New Brunswick (UNB).
+* **Domain:** Modern enterprise network environments.
+* **Primary Purpose:** Detection and classification of malicious network traffic using statistical flow-level features.
+* **Traffic Type:** Combination of legitimate background traffic and multiple categories of simulated cyberattacks.
+* **Capture Duration:** Traffic was collected over five consecutive days.
+* **Acquisition Protocol:** The dataset was generated using a B-Profile system designed to reproduce realistic user behavior and network activity. Background traffic includes services such as HTTP, HTTPS, FTP, SSH, and email, while synchronized attack scenarios were executed during the capture period.
+* **Data Representation:** Network packets are converted into bidirectional network flows and represented using statistical characteristics.
+* **File Format:** CSV.
+* **Feature Extraction:** CICFlowMeter.
+* **Feature Count:** The dataset provides more than 78 flow-level attributes, including packet statistics, byte counts, flow duration, protocol-related information, and forward/backward traffic characteristics.
+
+The flow-based representation is particularly useful for the proposed IDS because the model can learn behavioral characteristics of network communication instead of depending exclusively on packet payload inspection.
+
+### Major Feature Categories
+
+The dataset contains features describing properties such as:
+
+* Flow duration.
+* Forward and backward packet counts.
+* Forward and backward packet lengths.
+* Total bytes exchanged.
+* Packet length statistics.
+* Inter-arrival-time statistics.
+* TCP flag counts.
+* Header lengths.
+* Flow rates.
+* Active and idle periods.
+* Protocol-related information.
+
+These features provide statistical information about how a connection behaves and allow machine-learning models to distinguish normal traffic from anomalous traffic.
+
+---
+
+## 2.2 Attack Profiles & Class Distribution
+
 The dataset captures the following core attack profiles:
-1. **Benign**: Normal operational network activities.
-2. **Brute Force**: FTP-Patator, SSH-Patator.
-3. **DoS / DDoS**: DoS Slowloris, DoS Slowhttptest, DoS Hulk, DoS GoldenEye, Heartbleed, DDoS LOIC.
-4. **Web Attacks**: SQL Injection, Cross-Site Scripting (XSS), Web Brute Force.
-5. **Infiltration**: Internal network reconnaissance and privilege escalation.
-6. **Botnet**: ARES botnet command-and-control communications.
-7. **PortScan**: Stealthy and aggressive port sweeps.
 
-### 2.3 Preprocessing Strategy
-- **Header Sanitization**: Strip leading/trailing whitespace from column headers (e.g., `' Destination Port'`, `' Flow Duration'`).
-- **Anomalous Values**: Replace `+inf`, `-inf`, and divide-by-zero artifacts with numerical nulls (`NaN`), followed by feature-wise median imputation fitted solely on training splits.
-- **Identifier Pruning**: Exclude non-generalizable network identifiers (Source IP, Destination IP, Timestamp, Source Port) to force the model to learn flow behavioral patterns rather than memorize IP addresses.
-- **Normalization**: Apply `RobustScaler` or `StandardScaler` to handle extreme outliers in flow durations and packet byte counts.
+### 1. Benign
+
+Represents normal operational network activities generated by legitimate users and applications.
+
+Examples include:
+
+* HTTP traffic.
+* HTTPS traffic.
+* FTP communication.
+* SSH communication.
+* Email-related traffic.
+
+The benign class acts as the baseline against which anomalous network behavior is detected.
+
+### 2. Brute Force
+
+Represents attacks in which an attacker repeatedly attempts to authenticate against a service by trying multiple credentials.
+
+The dataset includes:
+
+* FTP-Patator.
+* SSH-Patator.
+
+These attacks are characterized by repeated authentication attempts and abnormal connection behavior.
+
+### 3. DoS / DDoS
+
+Represents denial-of-service attacks intended to exhaust the resources of a target system or service.
+
+Examples include:
+
+* DoS Slowloris.
+* DoS Slowhttptest.
+* DoS Hulk.
+* DoS GoldenEye.
+* Heartbleed.
+* DDoS LOIC.
+
+These attacks can produce abnormal flow rates, packet volumes, connection patterns, or service-level behavior.
+
+### 4. Web Attacks
+
+Represents attacks targeting web applications and web-facing services.
+
+Examples include:
+
+* SQL Injection.
+* Cross-Site Scripting (XSS).
+* Web Brute Force.
+
+These attacks are useful for evaluating whether the IDS can identify malicious traffic patterns associated with application-level attacks.
+
+### 5. Infiltration
+
+Represents malicious activity in which an attacker gains access to or attempts to move through an internal network environment.
+
+The traffic can include activities associated with:
+
+* Network reconnaissance.
+* Internal communication.
+* Privilege escalation.
+* Unauthorized access.
+
+### 6. Botnet
+
+Represents traffic generated by compromised machines participating in a botnet.
+
+The dataset contains traffic associated with the ARES botnet and its command-and-control communication behavior.
+
+### 7. PortScan
+
+Represents systematic probing of network ports to identify available services.
+
+Port scanning can generate distinctive connection patterns because an attacker may attempt connections to a large number of ports or hosts within a relatively short period.
+
+### Class Imbalance Consideration
+
+CICIDS2017 contains classes with substantially different numbers of samples. Therefore, class distribution must be explicitly analyzed during EDA rather than assuming that every attack category is equally represented.
+
+Class imbalance is particularly important for the proposed IDS because a model can achieve high overall accuracy while performing poorly on minority attack categories.
+
+Consequently, the EDA pipeline will record:
+
+* Number of samples per attack class.
+* Percentage contribution of each class.
+* Minority and majority classes.
+* Train/validation/test distribution.
+* Any classes requiring special handling during model evaluation.
 
 ---
 
-## 3. CIC-IoT2023 Dataset
+## 2.3 Preprocessing Strategy
 
-### 3.1 Overview & Source
-- **Provider**: Canadian Institute for Cybersecurity (CIC).
-- **Domain**: Internet of Things (IoT) and Industrial IoT infrastructure.
-- **Topology**: Captured across an extensive testbed incorporating 105 distinct smart devices (cameras, smart home sensors, microcontrollers) executing 33 diverse cyberattacks alongside legitimate smart traffic.
+### Header Sanitization
 
-### 3.2 Attack Taxonomies
-CIC-IoT2023 groups its 33 granular attack variants into 7 macro categories:
-1. **DDoS Attacks**: ICMP Flood, UDP Flood, TCP SYN Flood, HTTP Flood, etc.
-2. **DoS Attacks**: TCP DoS, UDP DoS, ICMP DoS.
-3. **Reconnaissance**: OS Fingerprinting, Host Discovery, Vulnerability Scanning, Ping Sweep.
-4. **Web-Based Attacks**: SQL Injection, Command Injection, Backdoor.
-5. **Brute Force**: Telnet, SSH, and Web credential attacks on IoT devices.
-6. **Spoofing**: ARP Spoofing, DNS Spoofing.
-7. **Mirai Botnet**: Mirai-greeth_flood, Mirai-udpplain, Mirai-ackflag.
+Column names are normalized before feature processing.
 
-### 3.3 Target Usage
-CIC-IoT2023 evaluates the hybrid model's ability to generalize to resource-constrained IoT architectures where traffic patterns feature high periodicity, small packet bursts, and high susceptibility to volumetric botnet swarms.
+Leading and trailing whitespace is removed from column headers, including examples such as:
+
+* `' Destination Port'` → `'Destination Port'`
+* `' Flow Duration'` → `'Flow Duration'`
+
+This prevents inconsistencies when selecting features programmatically.
 
 ---
 
-## 4. End-to-End Dataset Pipeline
+### Duplicate Removal
+
+Duplicate records are identified and removed during the sanitization stage.
+
+This is important because duplicated network-flow records can artificially increase the representation of particular traffic patterns and may cause the model to learn repeated observations rather than generalizable characteristics.
+
+The number of records before and after duplicate removal will be recorded during EDA.
+
+---
+
+### Anomalous Numerical Values
+
+Network-flow datasets can contain invalid numerical values caused by mathematical operations such as division by zero.
+
+The preprocessing pipeline handles:
+
+* `+inf`
+* `-inf`
+* Division-by-zero artifacts
+* Invalid numerical values
+
+These values are converted into numerical nulls (`NaN`).
+
+After the train/validation/test split, missing values are imputed using statistics calculated exclusively from the training partition.
+
+For numerical features, feature-wise median imputation is used because the median is less sensitive to extreme network-flow outliers than the mean.
+
+---
+
+### Identifier Pruning
+
+Non-generalizable identifiers are removed from the model input.
+
+The following fields are excluded:
+
+* Source IP.
+* Destination IP.
+* Timestamp.
+* Source Port.
+
+The objective is to prevent the model from memorizing specific addresses, ports, or timestamps instead of learning the underlying behavioral characteristics of network traffic.
+
+For example, if an attack is strongly associated with a particular source IP in the training dataset, retaining that IP could allow the model to classify the attack based on identity rather than traffic behavior.
+
+Therefore, identifier pruning improves the generalization of the IDS to previously unseen network environments.
+
+---
+
+### Feature Scaling
+
+Network-flow features can have significantly different numerical ranges.
+
+For example:
+
+* Packet counts may be relatively small.
+* Flow duration may have much larger values.
+* Byte counts can reach very large magnitudes.
+
+Therefore, feature scaling is applied before the data is provided to the machine-learning models.
+
+The pipeline supports:
+
+* **RobustScaler**, which reduces the influence of extreme outliers.
+* **StandardScaler**, which standardizes numerical features based on training-set statistics.
+
+The selected scaler is recorded in `config.yaml` so that experiments remain reproducible.
+
+---
+
+# 3. CIC-IoT2023 Dataset
+
+## 3.1 Overview & Source
+
+* **Provider:** Canadian Institute for Cybersecurity (CIC).
+* **Domain:** Internet of Things (IoT) and Industrial IoT infrastructure.
+* **Primary Purpose:** Evaluation of intrusion-detection approaches in heterogeneous IoT environments.
+* **Topology:** The dataset was captured across an extensive testbed containing **105 distinct smart devices**.
+* **Devices:** The environment includes devices such as cameras, smart-home sensors, and microcontrollers.
+* **Attack Diversity:** The testbed includes **33 diverse cyberattack variants** along with legitimate IoT traffic.
+* **Representation:** Network traffic is represented using flow-based statistical features.
+
+Unlike traditional enterprise-network datasets, IoT traffic can exhibit highly repetitive communication patterns, small packet sizes, periodic connections, and device-specific behaviors.
+
+This makes CIC-IoT2023 suitable for testing whether the proposed hybrid model can operate effectively in resource-constrained and heterogeneous IoT environments.
+
+---
+
+## 3.2 Attack Taxonomies
+
+CIC-IoT2023 groups its 33 granular attack variants into seven macro categories.
+
+### 1. DDoS Attacks
+
+Distributed denial-of-service attacks attempt to overwhelm a target using traffic generated by multiple sources or compromised devices.
+
+Examples include:
+
+* ICMP Flood.
+* UDP Flood.
+* TCP SYN Flood.
+* HTTP Flood.
+
+These attacks are particularly relevant to IoT environments because large numbers of compromised IoT devices can be coordinated to generate volumetric traffic.
+
+---
+
+### 2. DoS Attacks
+
+Denial-of-service attacks attempt to make a service or system unavailable by exhausting its resources.
+
+Examples include:
+
+* TCP DoS.
+* UDP DoS.
+* ICMP DoS.
+
+These attacks can result in abnormal packet rates, connection patterns, and resource-consumption behavior.
+
+---
+
+### 3. Reconnaissance
+
+Reconnaissance attacks involve collecting information about devices, hosts, services, or vulnerabilities before subsequent exploitation.
+
+Examples include:
+
+* OS Fingerprinting.
+* Host Discovery.
+* Vulnerability Scanning.
+* Ping Sweep.
+
+These activities can produce systematic communication patterns that differ from normal IoT device behavior.
+
+---
+
+### 4. Web-Based Attacks
+
+These attacks target web-facing services or applications hosted by IoT devices or related infrastructure.
+
+Examples include:
+
+* SQL Injection.
+* Command Injection.
+* Backdoor activity.
+
+The inclusion of these attacks allows evaluation of the IDS beyond purely volumetric network attacks.
+
+---
+
+### 5. Brute Force
+
+Brute-force attacks involve repeated authentication attempts against vulnerable IoT services.
+
+Examples include:
+
+* Telnet credential attacks.
+* SSH credential attacks.
+* Web credential attacks.
+
+These attacks are particularly relevant to IoT security because poorly secured network devices may expose remote-management services.
+
+---
+
+### 6. Spoofing
+
+Spoofing attacks involve impersonating or manipulating network identities or communication information.
+
+Examples include:
+
+* ARP Spoofing.
+* DNS Spoofing.
+
+These attacks can manipulate the apparent source or destination of network communication.
+
+---
+
+### 7. Mirai Botnet
+
+The dataset includes multiple Mirai-related attack variants.
+
+Examples include:
+
+* Mirai-greeth_flood.
+* Mirai-udpplain.
+* Mirai-ackflag.
+
+Mirai-based traffic is particularly relevant to IoT security because the Mirai malware family demonstrated how large populations of vulnerable IoT devices could be compromised and used as botnets.
+
+---
+
+## 3.3 Target Usage
+
+CIC-IoT2023 is used to evaluate the hybrid model's ability to generalize to resource-constrained IoT architectures.
+
+IoT network traffic can differ substantially from enterprise traffic because:
+
+* Devices often communicate periodically.
+* Packet bursts can be small and repetitive.
+* Devices may have limited computational resources.
+* Large numbers of similar devices may generate coordinated traffic.
+* IoT devices can be vulnerable to automated botnet propagation.
+* Network behavior can be strongly device-dependent.
+
+The dataset therefore provides an important complementary evaluation environment to CICIDS2017.
+
+---
+
+# 4. End-to-End Dataset Pipeline
+
+The complete dataset pipeline follows the sequence below:
 
 ```text
-  +--------------------------------------------+
-  |              Raw Dataset CSVs              |
-  |         (CICIDS2017 / CIC-IoT2023)         |
-  +---------------------+----------------------+
-                        |
-                        v
-  +--------------------------------------------+
-  |              Data Sanitization             |
-  | - Remove duplicate records                 |
-  | - Handle NaN / Infinity values             |
-  | - Strip non-generalizable identifiers      |
-  +---------------------+----------------------+
-                        |
-                        v
-  +--------------------------------------------+
-  |        Train / Val / Test Partition        |
-  | - Stratified Split: 70% Train, 15% Val, 15%|
-  +---------------------+----------------------+
-                        |
-         +--------------+--------------+
-         | (Fit & Transform)           | (Transform Only)
-         v                             v
-  +--------------------+      +--------------------+
-  | Feature Scaling &  |      | Validation & Test  |
-  | Label Encoding on  |      | Transformations    |
-  | Training Partition |      | (Zero Data Leakage)|
-  +---------+----------+      +---------+----------+
-            |                           |
-            +-------------+-------------+
-                          |
-                          v
-  +--------------------------------------------+
-  |         Engineered Tensors for VAE         |
-  |              & FT-Transformer              |
-  +--------------------------------------------+
+                    +--------------------------------------------+
+                    |              Raw Dataset CSVs              |
+                    |       CICIDS2017 / CIC-IoT2023             |
+                    +---------------------+----------------------+
+                                          |
+                                          v
+                    +--------------------------------------------+
+                    |           Dataset Validation               |
+                    | - Verify file format                       |
+                    | - Validate required columns                |
+                    | - Verify SHA-256 checksum                  |
+                    | - Detect corrupted/incomplete files        |
+                    +---------------------+----------------------+
+                                          |
+                                          v
+                    +--------------------------------------------+
+                    |          Data Sanitization                  |
+                    | - Remove duplicate records                 |
+                    | - Handle NaN / Infinity values              |
+                    | - Normalize column headers                  |
+                    | - Strip non-generalizable identifiers      |
+                    +---------------------+----------------------+
+                                          |
+                                          v
+                    +--------------------------------------------+
+                    |      Train / Val / Test Partition          |
+                    | - Stratified split                         |
+                    | - 70% Train                                |
+                    | - 15% Validation                            |
+                    | - 15% Test                                 |
+                    +---------------------+----------------------+
+                                          |
+                     +--------------------+--------------------+
+                     |                                         |
+                     v                                         v
+       +-------------------------------+       +-------------------------------+
+       |       Training Partition      |       |    Validation / Test          |
+       |                               |       |                               |
+       | - Fit imputer                |       | - Transform using             |
+       | - Fit scaler                 |       |   training statistics only    |
+       | - Fit label encoder          |       | - No fitting on these sets    |
+       +---------------+---------------+       +---------------+---------------+
+                       |                                       |
+                       +-------------------+-------------------+
+                                           |
+                                           v
+                    +--------------------------------------------+
+                    |       Engineered Model Input Tensors        |
+                    |                                            |
+                    |        VAE + FT-Transformer                 |
+                    +--------------------------------------------+
+                                           |
+                                           v
+                    +--------------------------------------------+
+                    |       Training / Validation / Testing      |
+                    | - Reconstruction / anomaly detection       |
+                    | - Attack classification                    |
+                    | - Zero-day / unseen attack evaluation     |
+                    +--------------------------------------------+
+```
+
+### Pipeline Explanation
+
+### Stage 1 — Raw Dataset Acquisition
+
+The original CSV files from CICIDS2017 and CIC-IoT2023 are collected and stored without modifying the original copies.
+
+A checksum is generated for each raw file to ensure that the exact dataset version used for an experiment can be identified later.
+
+### Stage 2 — Dataset Validation
+
+Before processing, the ingestion pipeline verifies:
+
+* File availability.
+* CSV structure.
+* Required columns.
+* Data types where applicable.
+* Presence of the target/label column.
+* File integrity.
+* SHA-256 checksum.
+
+Invalid or corrupted files are rejected instead of being silently processed.
+
+### Stage 3 — Data Sanitization
+
+The data is cleaned by:
+
+* Normalizing column names.
+* Removing duplicate records.
+* Converting invalid numerical values into `NaN`.
+* Removing non-generalizable identifiers.
+* Validating feature types.
+* Handling missing values according to the training-only preprocessing strategy.
+
+### Stage 4 — Train/Validation/Test Partition
+
+The cleaned dataset is partitioned using a stratified strategy:
+
+* **70% — Training**
+* **15% — Validation**
+* **15% — Testing**
+
+Stratification helps preserve the relative representation of classes across the partitions.
+
+The random seed used for the split is stored in the experiment configuration to make the partition reproducible.
+
+### Stage 5 — Training-Only Fitting
+
+Preprocessing components are fitted only using the training partition.
+
+This includes:
+
+* Missing-value imputation statistics.
+* Scaling parameters.
+* Label encoding/class mapping.
+
+For example, if median imputation is used, the median is calculated from the training data only.
+
+### Stage 6 — Validation/Test Transformation
+
+Validation and test data are transformed using the already-fitted training preprocessing objects.
+
+No statistical parameters are recalculated using validation or test data.
+
+### Stage 7 — Tensor Engineering
+
+After preprocessing, the numerical feature matrix and encoded labels are converted into model-compatible tensors.
+
+These tensors are then supplied to:
+
+* **Variational Autoencoder (VAE)**.
+* **FT-Transformer**.
+
+The VAE can learn a representation of normal/latent traffic behavior, while the FT-Transformer processes tabular network-flow features for downstream detection/classification.
+
+---
+
+# 5. Data Leakage Prevention Safeguards
+
+To maintain strict scientific validity and avoid data leakage, the following safeguards are implemented.
+
+## 5.1 Split-Before-Fit Principle
+
+The dataset is divided into:
+
+* Training — 70%.
+* Validation — 15%.
+* Testing — 15%.
+
+The split occurs **before fitting preprocessing parameters**.
+
+This means that information from the validation or test distributions cannot influence the preprocessing model.
+
+For example, the mean or median of a feature must never be calculated using the complete dataset before splitting.
+
+---
+
+## 5.2 Stateless Test Transformations
+
+The validation and test partitions are transformed using preprocessing parameters learned exclusively from the training partition.
+
+For example:
+
+```text
+Training Data
+     |
+     +----> Fit Imputer
+     |
+     +----> Fit Scaler
+     |
+     +----> Fit Label Mapping
+     |
+     v
+Training Transformation
+
+Validation Data
+     |
+     +----> Transform using training parameters
+
+Test Data
+     |
+     +----> Transform using training parameters
+```
+
+The validation and test distributions are therefore not used to fit preprocessing components.
+
+This ensures that reported evaluation metrics better represent performance on previously unseen data.
+
+---
+
+## 5.3 Temporal Awareness
+
+When chronological ordering is preserved, the pipeline avoids using future observations to predict historical anomalies.
+
+For sequence-based experiments:
+
+```text
+Past Traffic --------------------> Future Traffic
+       |                                 |
+       v                                 v
+    Training                        Validation/Test
+```
+
+Future packet bursts or future traffic behavior must not be allowed to influence representations used for earlier observations.
+
+This is especially important when evaluating real-world deployment scenarios where the IDS must detect attacks as traffic arrives over time.
+
+---
+
+## 5.4 Identifier Leakage Prevention
+
+Identifiers such as:
+
+* Source IP.
+* Destination IP.
+* Timestamp.
+* Source Port.
+
+are excluded from the model input where specified.
+
+This prevents the model from learning shortcuts such as:
+
+```text
+Specific IP → Attack
+```
+
+instead of learning generalized traffic behavior such as:
+
+```text
+Abnormal packet rate + abnormal flow duration
++ unusual connection pattern → Possible Attack
 ```
 
 ---
 
-## 5. Data Leakage Prevention Safeguards
+## 5.5 Experiment Reproducibility
 
-To maintain strict scientific validity and avoid data leakage:
-1. **Split-Before-Fit Principle**: Stratified splitting into Train (70%), Validation (15%), and Test (15%) sets must occur **before** computing any scaling parameters (mean, standard deviation, min, max) or imputing missing values.
-2. **Stateless Test Transformations**: The test and validation sets must only be transformed using statistics learned from the training set. No test distribution data is ever exposed during feature engineering.
-3. **Temporal Awareness**: When chronological order is preserved, sequence-based splits must avoid using future packet bursts to predict past anomalies.
+The random seed used during partitioning is recorded in the experiment configuration.
 
----
-
-## 6. Dataset Security & Ingestion Safety
-
-When accepting external CSV files via APIs:
-- **File Validation**: Enforce strict MIME-type checking (`text/csv`), file extension validation, and maximum upload size limits ($< 250\text{ MB}$).
-- **DoS Prevention**: Stream CSV ingestion chunk-by-chunk using generator streams rather than reading entire large files into RAM at once.
-- **Malicious Payload Guard**: Sanitize CSV content against formula injection (e.g., entries starting with `=`, `+`, `-`, `@`).
+Therefore, the same dataset and configuration can reproduce the same train/validation/test partition.
 
 ---
 
-## 7. Dataset Versioning & Experiment Tracking
+# 6. Dataset Security & Ingestion Safety
 
-Every training run records:
-- SHA-256 checksum of raw dataset files used.
-- Configuration file (`config.yaml`) specifying:
-  - Selected feature subset.
-  - Imputation strategy.
-  - Scaler type.
-  - Random seed used for stratified partitioning.
-  - Class mapping dictionary.
+When accepting external CSV files through APIs, the dataset ingestion layer must treat uploaded files as untrusted input.
+
+## 6.1 File Validation
+
+Uploaded files are validated using multiple checks:
+
+* MIME-type validation.
+* File-extension validation.
+* Maximum file-size restriction.
+* CSV structure validation.
+* Required-column validation.
+* File integrity validation.
+
+The maximum upload size is restricted to:
+
+**< 250 MB**
+
+This prevents unnecessarily large files from consuming excessive server resources.
 
 ---
 
-## 8. Post-Processing Profile (To Be Populated)
+## 6.2 DoS Prevention
 
-> [!NOTE]
-> The exact empirical statistics below will be calculated and documented following execution of the automated exploratory data analysis (EDA) pipeline in Weeks 4–5.
+Large CSV files should not be loaded completely into RAM.
 
-- **Total Samples Cleaned**: `[Pending EDA]`
-- **Feature Count (Numerical / Categorical)**: `[Pending EDA]`
-- **Attack Class Distribution (Sample Count & %)**: `[Pending EDA]`
-- **Null Value / Imputation Count**: `[Pending EDA]`
-- **Train / Validation / Test Sample Counts**: `[Pending EDA]`
+Instead, ingestion should process the dataset incrementally:
+
+```text
+CSV File
+   |
+   v
+Read Chunk 1
+   |
+Process
+   |
+Read Chunk 2
+   |
+Process
+   |
+Read Chunk 3
+   |
+Process
+   |
+   ...
+```
+
+Chunk-based or generator-based processing reduces peak memory consumption and makes the API more resistant to resource-exhaustion attacks.
+
+---
+
+## 6.3 Malicious Payload Guard
+
+CSV files may contain values that can become dangerous when exported to spreadsheet applications.
+
+Examples of potentially interpreted formula prefixes include:
+
+```text
+=
++
+-
+@
+```
+
+Therefore, uploaded textual fields should be sanitized when necessary to prevent CSV/formula injection.
+
+The ingestion layer should distinguish between legitimate numerical negative values and malicious formula-like content rather than blindly modifying all values beginning with `-`.
+
+---
+
+## 6.4 Resource Controls
+
+The ingestion API should also enforce reasonable operational limits, including:
+
+* Maximum file size.
+* Request timeout.
+* Maximum processing duration where applicable.
+* Controlled temporary-file storage.
+* Validation before expensive preprocessing.
+* Controlled concurrent uploads.
+
+These controls reduce the possibility that malicious or malformed datasets consume excessive server resources.
+
+---
+
+# 7. Dataset Versioning & Experiment Tracking
+
+Every training experiment records sufficient metadata to reproduce the dataset-processing configuration.
+
+## 7.1 SHA-256 Dataset Checksum
+
+A SHA-256 checksum is generated for each raw dataset file.
+
+The checksum acts as an integrity fingerprint:
+
+```text
+Raw Dataset
+     |
+     v
+SHA-256
+     |
+     v
+Unique File Fingerprint
+```
+
+If the underlying file changes, its checksum will normally change as well.
+
+This allows researchers to determine exactly which dataset version was used for a particular experiment.
+
+---
+
+## 7.2 Configuration File
+
+Each experiment records a `config.yaml` file containing configuration information such as:
+
+```yaml
+features:
+  selected:
+    - feature_1
+    - feature_2
+    - feature_3
+
+preprocessing:
+  imputation: median
+  scaler: RobustScaler
+
+split:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+  random_seed: 42
+
+labels:
+  mapping:
+    benign: 0
+    attack: 1
+```
+
+The exact feature subset, preprocessing strategy, random seed, and class mapping can therefore be recovered for future experiments.
+
+---
+
+## 7.3 Recommended Experiment Metadata
+
+In addition to the required configuration, each experiment can record:
+
+* Dataset name.
+* Dataset version.
+* Raw-file checksum.
+* Number of input features.
+* Number of samples.
+* Preprocessing configuration.
+* Class mapping.
+* Train/validation/test counts.
+* Random seed.
+* Model configuration.
+* Training epoch count.
+* Batch size.
+* Learning rate.
+* Evaluation metrics.
+
+This provides an audit trail between the dataset and the final model results.
+
+---
+
+# 8. Post-Processing Profile (To Be Populated)
+
+The exact empirical statistics below will be calculated and documented following execution of the automated exploratory data analysis (EDA) pipeline in Weeks 4–5.
+
+## 8.1 Dataset Size
+
+* **Total Samples Before Cleaning:** `[Pending EDA]`
+* **Total Duplicate Records Removed:** `[Pending EDA]`
+* **Total Samples After Cleaning:** `[Pending EDA]`
+
+This section will quantify the impact of the sanitization pipeline on the original dataset size.
+
+---
+
+## 8.2 Feature Profile
+
+* **Total Features Before Pruning:** `[Pending EDA]`
+* **Features Removed:** `[Pending EDA]`
+* **Final Feature Count:** `[Pending EDA]`
+* **Numerical Features:** `[Pending EDA]`
+* **Categorical Features:** `[Pending EDA]`
+* **Identifier Features Removed:** `[Pending EDA]`
+
+The final feature profile will document the exact model input dimensionality.
+
+---
+
+## 8.3 Attack Class Distribution
+
+For every attack class, the EDA pipeline will record:
+
+| Class        |    Sample Count |      Percentage |
+| ------------ | --------------: | --------------: |
+| Benign       | `[Pending EDA]` | `[Pending EDA]` |
+| Brute Force  | `[Pending EDA]` | `[Pending EDA]` |
+| DoS          | `[Pending EDA]` | `[Pending EDA]` |
+| DDoS         | `[Pending EDA]` | `[Pending EDA]` |
+| Web Attacks  | `[Pending EDA]` | `[Pending EDA]` |
+| Infiltration | `[Pending EDA]` | `[Pending EDA]` |
+| Botnet       | `[Pending EDA]` | `[Pending EDA]` |
+| PortScan     | `[Pending EDA]` | `[Pending EDA]` |
+
+The exact categories shown in the final table will be aligned with the label representation used by the implemented dataset pipeline.
+
+---
+
+## 8.4 Missing and Invalid Values
+
+The EDA pipeline will report:
+
+* Number of `NaN` values.
+* Number of `+inf` values.
+* Number of `-inf` values.
+* Number of invalid records.
+* Number of values replaced with `NaN`.
+* Number of values imputed.
+* Percentage of affected samples/features.
+
+These statistics provide evidence that the preprocessing stage was executed correctly.
+
+---
+
+## 8.5 Train / Validation / Test Distribution
+
+The final dataset partition will be documented as:
+
+| Partition  | Percentage |      Sample Count |
+| ---------- | ---------: | ----------------: |
+| Training   |        70% |   `[Pending EDA]` |
+| Validation |        15% |   `[Pending EDA]` |
+| Testing    |        15% |   `[Pending EDA]` |
+| **Total**  |   **100%** | **[Pending EDA]** |
+
+The class distribution of each partition will also be checked to confirm that stratification has preserved the expected class representation.
+
+---
+
+## 8.6 Final Dataset Artifact
+
+After completion of the EDA and preprocessing pipeline, the following artifacts should be maintained for each dataset:
+
+```text
+dataset/
+│
+├── raw/
+│   ├── CICIDS2017/
+│   └── CIC-IoT2023/
+│
+├── processed/
+│   ├── train/
+│   ├── validation/
+│   └── test/
+│
+├── metadata/
+│   ├── dataset_checksums.json
+│   ├── feature_schema.json
+│   └── class_mapping.json
+│
+├── reports/
+│   ├── eda_report.html
+│   ├── class_distribution.csv
+│   └── preprocessing_report.json
+│
+└── config.yaml
+```
+
+The raw datasets remain unchanged, while processed datasets and experiment artifacts are generated separately.
+
+This separation helps preserve dataset integrity, supports reproducibility, and makes it possible to trace model results back to the exact preprocessing configuration used during training.
+
+---
+
+# 9. Summary
+
+The proposed dataset pipeline provides a controlled and reproducible process for preparing CICIDS2017 and CIC-IoT2023 for the Hybrid ML Based IDS.
+
+The main principles are:
+
+1. **Use diverse cybersecurity datasets** covering enterprise and IoT environments.
+2. **Sanitize raw data** before model training.
+3. **Remove non-generalizable identifiers** to reduce memorization and leakage.
+4. **Split data before fitting preprocessing operations.**
+5. **Fit imputers, scalers, and encoders only on training data.**
+6. **Transform validation and test data without refitting preprocessing components.**
+7. **Maintain temporal awareness for chronological experiments.**
+8. **Validate external CSV uploads before processing.**
+9. **Use chunk-based ingestion for large datasets.**
+10. **Track dataset checksums and preprocessing configurations.**
+11. **Generate automated EDA statistics for every processed dataset.**
+12. **Maintain reproducible dataset and experiment artifacts.**
+
+Together, these controls establish a robust foundation for training and evaluating the **Hybrid ML Based Intrusion Detection System**, while reducing the risk of preprocessing errors, data leakage, dataset corruption, and irreproducible experimental results.

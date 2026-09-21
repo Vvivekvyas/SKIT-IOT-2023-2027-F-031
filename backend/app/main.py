@@ -1,6 +1,7 @@
 """
 App entrypoint. Wires CORS, rate limiting, and versioned routers.
 Run with: uvicorn app.main:app --reload
+Before first run: python -m app.db.seed
 """
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,7 +19,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,  # never "*" — locked to known frontend origins
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
@@ -35,9 +36,4 @@ def health():
 
 @app.get(f"{settings.API_V1_PREFIX}/me")
 def read_current_user(user: CurrentUser = Depends(get_current_user)):
-    """
-    Sanity-check route proving the auth dependency works end to end.
-    Every real feature route (predict, alerts, datasets) will depend on
-    get_current_user or require_role() exactly like this.
-    """
     return {"username": user.username, "role": user.role}

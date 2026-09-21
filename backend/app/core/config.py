@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Database (Pranjal owns the actual schema/models; this is just the connection string)
+    # Database
     DATABASE_URL: str = "sqlite:///./ids_dev.db"
 
     # CORS — locked to known frontend origins, never "*"

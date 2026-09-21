@@ -1,6 +1,9 @@
 from pathlib import Path
+
+import numpy as np
 import pandas as pd
 
+from pandas.errors import ParserError
 
 def load_csv(file_path):
     """
@@ -32,18 +35,25 @@ def load_csv(file_path):
     return df
 
 
-def load_dataset_folder(folder_path, dataset_name=None):
+def load_dataset_folder(
+    folder_path,
+    dataset_name=None,
+    sample_rows=None
+):
     """
-    Load and combine all CSV files from a folder
-    and its subfolders.
+    Load CSV files from a folder.
 
     Parameters
     ----------
     folder_path : str or Path
-        Root folder containing CSV files.
+        Folder containing CSV files.
 
     dataset_name : str, optional
-        Name of the dataset.
+        Dataset name.
+
+    sample_rows : int, optional
+        Number of rows to load from each CSV.
+        If None, the complete file is loaded.
 
     Returns
     -------
@@ -58,7 +68,6 @@ def load_dataset_folder(folder_path, dataset_name=None):
             f"Dataset folder not found: {folder_path}"
         )
 
-    # rglob searches the folder and all subfolders
     csv_files = sorted(folder_path.rglob("*.csv"))
 
     if not csv_files:
@@ -70,18 +79,34 @@ def load_dataset_folder(folder_path, dataset_name=None):
 
     for file in csv_files:
 
-        print(f"Loading: {file}")
+        print(f"Loading: {file.relative_to(folder_path)}")
 
-        df = pd.read_csv(file)
+        try:
 
-        # Keep track of the original file
-        df["Source_File"] = str(file.relative_to(folder_path))
+            df = pd.read_csv(
+                file,
+                nrows=sample_rows
+            )
 
-        # Keep track of the dataset
+        except (MemoryError, ParserError) as e:
+
+            print(f"Could not load {file.name}: {e}")
+            continue
+
+        # Keep track of original file
+        df["Source_File"] = str(
+            file.relative_to(folder_path)
+        )
+
         if dataset_name is not None:
             df["Dataset"] = dataset_name
 
         dataframes.append(df)
+
+    if not dataframes:
+        raise RuntimeError(
+            "No CSV files could be loaded."
+        )
 
     combined_df = pd.concat(
         dataframes,

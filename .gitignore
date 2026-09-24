@@ -2,11 +2,11 @@
 .env
 
 # Raw datasets
-data/raw/
+app/data/raw/
 *.csv
 
 # Processed datasets
-data/processed/
+app/data/processed/
 
 # Python
 __pycache__/

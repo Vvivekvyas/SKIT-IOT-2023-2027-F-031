@@ -16,6 +16,8 @@ docs/
 │   └── DATASET_DOCUMENTATION.md
 ├── project/
 │   └── DOCUMENTATION_STRUCTURE.md
+├── reports/
+│   └── PREPROCESSING_REPORT.md
 └── testing/
     ├── TEST_STRATEGY.md
     └── TEST_CASES.md
@@ -43,7 +45,13 @@ docs/
   - `DOCUMENTATION_STRUCTURE.md`: This file, serving as the index and formatting standard for all project documentation.
 - **Audience**: All team members, academic evaluators, and project mentors.
 
-### 4. `docs/testing/`
+### 4. `docs/reports/`
+- **Purpose**: Technical milestone reports, experimental analyses, and data engineering audit logs.
+- **Key Documents**:
+  - `PREPROCESSING_REPORT.md`: Comprehensive technical report detailing data cleaning, infinity/NaN treatment, leakage elimination, scaling rationale, and data validation test suite results (Week 4 deliverable by Ronak).
+- **Audience**: Data engineers, ML researchers, reviewers.
+
+### 5. `docs/testing/`
 - **Purpose**: Covers all verification, validation, and quality assurance strategies for the software and machine learning models.
 - **Key Documents**:
   - `TEST_STRATEGY.md`: Outlines the multi-tier testing methodology (Unit, Integration, API, Model Evaluation, Security, and Performance).

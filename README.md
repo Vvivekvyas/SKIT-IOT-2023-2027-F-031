@@ -127,7 +127,29 @@ The system is developed and benchmarked on two benchmark intrusion detection dat
   - **Transformer Encoder Blocks**: Multi-head self-attention (MHSA) capturing feature-to-feature interactions followed by feedforward layers and LayerNorm.
   - **[CLS] Token Classification Head**: Collects aggregated context for softmax multiclass output.
 
+---
 
+## 📅 Development Roadmap & Milestones
+
+| Milestone | Scope & Deliverables | Lead / Contributor | Status |
+| :--- | :--- | :--- | :---: |
+| **Weeks 1–3** | System Architecture, Multi-tier Testing Strategy, Initial Test Matrix (TC-001–022), Issue Templates, Dataset Specs | Vivek Vyas & Team | **Completed** |
+| **Week 4** | Data Validation Test Suite (`tests/`), Preprocessing Pipeline (`src/data/`), Technical Preprocessing Report (`docs/reports/`) | Ronak | **Completed** |
+| **Week 5** | Variational Autoencoder (VAE) Latent Model Architecture & Training Formulation | Team | Planned |
+| **Week 6** | Feature Tokenizer & FT-Transformer Classifier Construction | Team | Planned |
+| **Weeks 7–8** | End-to-End Hybrid Pipeline Training, Loss Tuning, Ablation Studies | Team | Planned |
+| **Weeks 9–10** | Backend API Inference Service (FastAPI) & Verification Matrix | Team | Planned |
+| **Weeks 11–12** | Model Benchmarking, Docker Containerization, CI/CD & Final Evaluation | Team | Planned |
+
+---
+
+## 👥 Team Responsibilities
+
+- **Vivek Vyas**: System Architecture, Test Strategy, Dataset Documentation, Lead Coordination.
+- **Ronak**: Data Ingestion, Data Validation Test Suite (`tests/test_data_validation.py`), Preprocessing Pipeline (`src/data/`), and Technical Preprocessing Report (`docs/reports/PREPROCESSING_REPORT.md`).
+- **Team**: Model Training, Transformer Engineering, API Serving, and QA Integration.
+
+---
 
 ## 🔐 Security
 
@@ -150,4 +172,4 @@ The system is developed and benchmarked on two benchmark intrusion detection dat
 
 - **Real-Time Stream Processing**: Integration with Apache Kafka or eBPF packet capture engines.
 - **Explainable AI (XAI)**: Integration of SHAP/LIME to explain attention weights and individual feature contributions to security analysts.
-- **Edge Deployment**: Model quantization and pruning (ONNX/TensorRT) for deployment on IoT gateways. 
+- **Edge Deployment**: Model quantization and pruning (ONNX/TensorRT) for deployment on IoT gateways.

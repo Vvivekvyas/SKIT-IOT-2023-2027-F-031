@@ -1,0 +1,3 @@
+Dataset,Rows_Before,Rows_After,Rows_Removed,Columns
+CICIDS2017,2830743,2572640,258103,81
+CIC-IoT2023,309000,306627,2373,41

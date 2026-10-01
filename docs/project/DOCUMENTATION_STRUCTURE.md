@@ -43,12 +43,14 @@ docs/
 - **Purpose**: Contains project governance, planning, team guidelines, and documentation policies.
 - **Key Documents**:
   - `DOCUMENTATION_STRUCTURE.md`: This file, serving as the index and formatting standard for all project documentation.
+  - `WEEK_05_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 5 QA & Preprocessing Test Report (Week 5 deliverable by Ronak).
 - **Audience**: All team members, academic evaluators, and project mentors.
 
 ### 4. `docs/reports/`
 - **Purpose**: Technical milestone reports, experimental analyses, and data engineering audit logs.
 - **Key Documents**:
-  - `PREPROCESSING_REPORT.md`: Comprehensive technical report detailing data cleaning, infinity/NaN treatment, leakage elimination, scaling rationale, and data validation test suite results (Week 4 deliverable by Ronak).
+  - `PREPROCESSING_REPORT.md`: Comprehensive technical report detailing data cleaning, infinity/NaN treatment, leakage elimination, scaling rationale, and data validation test suite architecture (Week 4 deliverable by Ronak).
+  - `PREPROCESSING_TEST_REPORT.md`: Exhaustive test report detailing automated test execution, test matrices, pass/fail status, code coverage metrics, and data leakage audit across data cleaner and preprocessor suites (Week 5 deliverable by Ronak).
 - **Audience**: Data engineers, ML researchers, reviewers.
 
 ### 5. `docs/testing/`

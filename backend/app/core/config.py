@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     LOGIN_RATE_LIMIT: str = "5/minute"
     PREDICT_RATE_LIMIT: str = "60/minute"
 
+    # Dataset ingestion
+    UPLOAD_DIR: str = "./uploads"
+    MAX_UPLOAD_SIZE_MB: int = 200
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

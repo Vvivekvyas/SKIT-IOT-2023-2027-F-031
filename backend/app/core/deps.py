@@ -5,11 +5,11 @@ role-gated wrappers below).
 """
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.security import Role, decode_token, has_required_role
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+bearer_scheme = HTTPBearer()
 
 
 class CurrentUser:
@@ -18,7 +18,10 @@ class CurrentUser:
         self.role = role
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+) -> CurrentUser:
+    token = credentials.credentials
     try:
         payload = decode_token(token)
         if payload.get("type") != "access":

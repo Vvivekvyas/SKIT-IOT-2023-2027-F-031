@@ -208,6 +208,7 @@ This checks the exact feature set the model will train on for:
     (AUC ≥ 0.98) — a red flag for either a genuinely strong signal or a leak
 
 Output: `app/data/processed/feature_quality_report.md` — share this with your
+
 supervisor/team alongside the preprocessing report from Module 2.
 
 ## 9. Run tests

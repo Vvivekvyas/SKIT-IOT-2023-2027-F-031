@@ -53,7 +53,7 @@ CIC_IOT2023_LABEL_MAP: dict[str, str] = {
     "Backdoor_Malware": "R2L", "CommandInjection": "R2L", "SqlInjection": "R2L",
     "XSS": "R2L", "Uploading_Attack": "R2L", "DictionaryBruteForce": "R2L",
     # Mirai botnet family -> closest analogue is U2R (privilege/host compromise)
-    "Mirai-greeth_flood": "U2R", "Mirai-greip_flood": "U2R", "Mirai-udpplain": "U2R",
+        "Mirai-greeth_flood": "DoS", "Mirai-greip_flood": "DoS", "Mirai-udpplain": "DoS",
 }
 
 

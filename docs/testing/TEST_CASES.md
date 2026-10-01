@@ -13,6 +13,9 @@ This document provides the formal test case specifications for the **Hybrid ML B
 | :---: | :---: | :---: | :---: | :---: |
 | 22 | 16 | 6 | 0 | 0 |
 
+> [!TIP]
+> Complete test execution matrices, code coverage audits, and data leakage verification for **TC-001 through TC-007** are documented in the [Preprocessing Test Report (Week 5)](../reports/PREPROCESSING_TEST_REPORT.md).
+
 ---
 
 ## Detailed Test Cases Matrix

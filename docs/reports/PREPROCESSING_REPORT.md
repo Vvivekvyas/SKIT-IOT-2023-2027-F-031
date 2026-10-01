@@ -218,6 +218,8 @@ Ronak implemented an automated pytest test suite in `tests/test_data_validation.
 The Week 4 deliverables provide a validated, robust data engineering layer that prevents data leakage and ensures consistent tensor representations across both CICIDS2017 and CIC-IoT2023.
 
 ### Handoff to Week 5:
-- **Input Tensor Dimensions**: Preprocessed feature tensors $X \in \mathbb{R}^{N \times D}$ where $D = 78$ (CICIDS2017) or $D = 46$ (CIC-IoT2023).
-- **Target Vector**: Label vectors $y \in \{0, \dots, K-1\}^N$.
-- **Next Milestone**: Variational Autoencoder (VAE) architecture implementation, encoder-decoder loss formulation ($\text{MSE} + \beta \text{KLD}$), and latent embedding ($z \in \mathbb{R}^{32}$) extraction.
+- **Verified Subsystems**: `src/data/cleaner.py`, `src/data/preprocessor.py`, `src/data/validator.py`, and `src/data/schemas.py`.
+- **Target Deliverable for Week 5**: **Preprocessing Test Report** (`PREPROCESSING_TEST_REPORT.md`) & **GitHub Milestone 5** (`WEEK_05_MILESTONE.md`).
+- **Subsequent Roadmaps**:
+  - **Week 6**: EDA documentation + reproducibility checks.
+  - **Week 7**: Data pipeline tests.

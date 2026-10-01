@@ -1,5 +1,7 @@
 # Environment variables
+uploads/
 .env
+*.db
 
 # Raw datasets
 app/data/raw/

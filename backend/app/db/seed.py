@@ -2,7 +2,8 @@
 Run once to set up your local database:
     python -m app.db.seed
 
-Creates all tables and inserts one test user, if it doesn't already exist.
+Creates all tables and inserts two test users (analyst + admin),
+skipping any that already exist. Safe to re-run.
 """
 from app.core.security import hash_password
 from app.db.database import Base, SessionLocal, engine
@@ -10,24 +11,25 @@ from app.models.dataset import Dataset  # noqa: F401 — imported so create_all 
 from app.models.prediction import Prediction  # noqa: F401
 from app.models.user import User
 
+TEST_USERS = [
+    ("analyst@example.com", "changeme123", "analyst"),
+    ("admin@example.com", "changeme123", "admin"),
+]
+
 
 def seed():
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
     try:
-        existing = db.query(User).filter(User.username == "analyst@example.com").first()
-        if not existing:
-            test_user = User(
-                username="analyst@example.com",
-                hashed_password=hash_password("changeme123"),
-                role="analyst",
-            )
-            db.add(test_user)
+        for username, password, role in TEST_USERS:
+            existing = db.query(User).filter(User.username == username).first()
+            if existing:
+                print(f"{username} already exists — skipping.")
+                continue
+            db.add(User(username=username, hashed_password=hash_password(password), role=role))
             db.commit()
-            print("Created test user: analyst@example.com / changeme123")
-        else:
-            print("Test user already exists — nothing to do.")
+            print(f"Created {role}: {username} / {password}")
     finally:
         db.close()
 

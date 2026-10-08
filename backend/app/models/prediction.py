@@ -1,7 +1,6 @@
 """
 Prediction table — stores each classification result. Doubles as the source
 for the /alerts endpoints (an "alert" is simply a non-Normal prediction).
-Matches POST /predict, GET /predict/{id}, GET /alerts from api-specification.md.
 """
 import uuid
 from datetime import datetime, timezone

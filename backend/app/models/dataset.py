@@ -1,6 +1,5 @@
 """
 Dataset table — tracks uploaded traffic datasets and their processing status.
-Matches POST /datasets/upload and GET /datasets/{id}/status from api-specification.md.
 """
 import uuid
 from datetime import datetime, timezone

@@ -1,7 +1,6 @@
 """
 Auth endpoints. Login/refresh flow is fully wired with real JWT + hashing,
-now backed by the actual User table instead of Week 3's temporary
-in-memory dictionary.
+backed by the actual User table.
 """
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status

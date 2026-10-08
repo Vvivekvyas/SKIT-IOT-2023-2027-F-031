@@ -1,36 +1,40 @@
-# ids-api — Week 5: Data ingestion API
+# ids-api — Week 6: Dataset upload/processing endpoints
 
 ## What's new this week
 
-- `POST /api/v1/datasets/upload` — real, working endpoint: accepts a CSV,
-  validates file type and size, saves it to disk, creates a `Dataset` row,
-  and processes it in the background (counts rows, flips status to
-  `processed` or `failed`)
-- `GET /api/v1/datasets/{id}/status` — poll for the processing result
-- Both require `analyst` or `admin` role
+All under `/api/v1/datasets`:
+
+| Endpoint | Who | What it does |
+|---|---|---|
+| `POST /upload` | analyst, admin | Upload a CSV (validated, size-limited) |
+| `GET /` | analyst, admin | List datasets, newest first (`limit`, `offset`) |
+| `GET /{id}` | analyst, admin | Name, status, row count, file size, upload time |
+| `GET /{id}/status` | analyst, admin | Processing status |
+| `GET /{id}/preview` | analyst, admin | Column names + first N rows (`limit`, 1-50) |
+| `POST /{id}/process` | analyst, admin | Re-run processing (409 if already running) |
+| `DELETE /{id}` | admin only | Delete the dataset row and its file |
+
+The seed script now also creates `admin@example.com` (needed to test delete).
 
 ## Run it
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env   # then set a real JWT_SECRET_KEY
-python -m app.db.seed  # creates tables + test user (run once)
+python -m app.db.seed  # creates tables + test users (safe to re-run)
 uvicorn app.main:app --reload
 ```
 
 Docs: http://localhost:8000/docs
 
-Test login: `analyst@example.com` / `changeme123`
+Test logins (password `changeme123` for both):
+- `analyst@example.com`
+- `admin@example.com`
 
-## What's implemented
+## Also available
 
-- `POST /api/v1/auth/login` — queries the real `users` table
-- `POST /api/v1/auth/refresh` — token rotation
-- `GET /api/v1/me` — protected test route
-- `GET /health` — public health check
-- `POST /api/v1/datasets/upload`, `GET /api/v1/datasets/{id}/status` — dataset ingestion
-- `app/models/` — SQLAlchemy table definitions (User, Dataset, Prediction)
-- `app/schemas/` — Pydantic request/response models for auth, datasets, predictions/alerts
+- `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`
+- `GET /api/v1/me`, `GET /health`
 
 ## Layout
 
@@ -45,6 +49,5 @@ app/
 
 ## Not yet wired up
 
-The `Prediction` table and schema exist, but there's no `/predict` endpoint
-yet — that lands once the ML side (VAE + FT-Transformer) has a trained
-model to actually call, per the project's later weeks.
+The `Prediction` table and schemas exist, but there is no `/predict` endpoint
+yet — that lands once the ML side has a trained model to call.

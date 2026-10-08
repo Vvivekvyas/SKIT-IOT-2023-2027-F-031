@@ -1,7 +1,5 @@
 """
 User table.
-
-Replaces the temporary in-memory fake user store from Week 3.
 """
 import uuid
 from datetime import datetime, timezone

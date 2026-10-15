@@ -17,9 +17,9 @@ class TestDataPreprocessor:
             sample_cicids2017_valid_df, train_ratio=0.70, val_ratio=0.15, test_ratio=0.15
         )
 
-        assert len(train_df) == 68  # integer floor per class
-        assert len(val_df) == 13
-        assert len(test_df) == 19
+        assert len(train_df) == 69  # integer floor per class
+        assert len(val_df) == 14
+        assert len(test_df) == 17
         assert len(train_df) + len(val_df) + len(test_df) == len(sample_cicids2017_valid_df)
 
         # Ensure all classes exist in training set

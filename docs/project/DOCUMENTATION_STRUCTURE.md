@@ -44,6 +44,8 @@ docs/
 - **Key Documents**:
   - `DOCUMENTATION_STRUCTURE.md`: This file, serving as the index and formatting standard for all project documentation.
   - `WEEK_05_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 5 QA & Preprocessing Test Report (Week 5 deliverable by Ronak).
+  - `WEEK_06_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 6 Data Pipeline Tests & Streaming Integration (Week 6 deliverable by Ronak).
+  - `WEEK_07_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 7 Baseline Model Evaluation & Benchmarking (Week 7 deliverable by Ronak).
 - **Audience**: All team members, academic evaluators, and project mentors.
 
 ### 4. `docs/reports/`
@@ -51,6 +53,8 @@ docs/
 - **Key Documents**:
   - `PREPROCESSING_REPORT.md`: Comprehensive technical report detailing data cleaning, infinity/NaN treatment, leakage elimination, scaling rationale, and data validation test suite architecture (Week 4 deliverable by Ronak).
   - `PREPROCESSING_TEST_REPORT.md`: Exhaustive test report detailing automated test execution, test matrices, pass/fail status, code coverage metrics, and data leakage audit across data cleaner and preprocessor suites (Week 5 deliverable by Ronak).
+  - `DATA_PIPELINE_TEST_REPORT.md`: Exhaustive integration test report detailing end-to-end data pipeline orchestration, streaming generators, schema serialization, and leakage isolation (Week 6 deliverable by Ronak).
+  - `BASELINE_EVALUATION_REPORT.md`: Comprehensive baseline model benchmark report detailing classification performance, minority attack tracking, and TC-021/TC-022 latency metrics (Week 7 deliverable by Ronak).
 - **Audience**: Data engineers, ML researchers, reviewers.
 
 ### 5. `docs/testing/`

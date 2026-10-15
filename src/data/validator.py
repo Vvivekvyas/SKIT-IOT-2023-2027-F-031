@@ -233,3 +233,8 @@ class DatasetValidator:
             report.warnings.append(
                 f"Found {len(zero_var)} zero-variance / constant feature(s): {zero_var[:5]}..."
             )
+
+
+# Alias for consistent naming
+DataValidator = DatasetValidator
+

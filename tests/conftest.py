@@ -71,7 +71,7 @@ def sample_cicids2017_dirty_df(sample_cicids2017_valid_df: pd.DataFrame) -> pd.D
     dirty_df.loc[10:12, "Flow IAT Mean"] = np.nan
 
     # 4. Inject duplicate rows
-    duplicate_rows = dirty_df.iloc[0:5].copy()
+    duplicate_rows = dirty_df.iloc[20:25].copy()
     dirty_df = pd.concat([dirty_df, duplicate_rows], ignore_index=True)
 
     # 5. Inject a zero-variance column

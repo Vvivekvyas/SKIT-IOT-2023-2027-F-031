@@ -11,10 +11,10 @@ This document provides the formal test case specifications for the **Hybrid ML B
 
 | Total Test Cases | Planned / Draft | Passed | Failed | Blocked |
 | :---: | :---: | :---: | :---: | :---: |
-| 22 | 16 | 6 | 0 | 0 |
+| 40 | 13 | 27 | 0 | 0 |
 
 > [!TIP]
-> Complete test execution matrices, code coverage audits, and data leakage verification for **TC-001 through TC-007** are documented in the [Preprocessing Test Report (Week 5)](../reports/PREPROCESSING_TEST_REPORT.md).
+> Complete test execution matrices, code coverage audits, and data leakage verification are documented in the [Preprocessing Test Report (Week 5)](../reports/PREPROCESSING_TEST_REPORT.md), [Data Pipeline Test Report (Week 6)](../reports/DATA_PIPELINE_TEST_REPORT.md), and [Baseline Evaluation Report (Week 7)](../reports/BASELINE_EVALUATION_REPORT.md).
 
 ---
 
@@ -42,8 +42,26 @@ This document provides the formal test case specifications for the **Hybrid ML B
 | **TC-018** | Hybrid Pipeline | End-to-end inference from raw flow to prediction | Full hybrid model pipeline loaded | Raw network flow vector | End-to-end prediction produced matching expected schema without manual intervention | Pending execution | Planned |
 | **TC-019** | Error Handling | Graceful handling of internal model failure | Simulated GPU out-of-memory or model exception | Fault-injected inference request | HTTP 500: Generic safe error message returned; no stack trace or credentials exposed | Pending execution | Planned |
 | **TC-020** | Security | Role-based endpoint authorization | User authenticated with standard role | Attempt to access administrative endpoint `/api/v1/admin/train` | HTTP 403: Forbidden, Insufficient permissions | Pending execution | Planned |
-| **TC-021** | Performance | Single-flow prediction latency benchmark | Server running in test environment | 100 sequential inference requests | 95th percentile latency $\le 25\text{ ms}$ per sample | Pending execution | Planned |
-| **TC-022** | Performance | Batch flow processing throughput | Server running in test environment | Batch request with 1,000 flow records | Batch processed successfully within $\le 2.0\text{ seconds}$ | Pending execution | Planned |
+| **TC-021** | Performance | Single-flow prediction latency benchmark | Server running in test environment | 100 sequential inference requests | 95th percentile latency $\le 25\text{ ms}$ per sample | p95 latency 1.85 ms verified | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-022** | Performance | Batch flow processing throughput | Server running in test environment | Batch request with 1,000 flow records | Batch processed successfully within $\le 2.0\text{ seconds}$ | 1,000 flows processed in 0.038s (> 26,000 flows/s) | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-023** | Pipeline | Pipeline configuration and dataset validation | Pipeline initialized | Dataset configs (`CICIDS2017`, `CIC-IoT2023`) | Initializes properly, rejects unknown dataset names | Handled with ValueError | Passed (`tests/test_data_pipeline.py`) |
+| **TC-024** | Pipeline | Complete fit_transform flow | Pipeline initialized | 100-sample clean CICIDS2017 records | Stratified partitions (69/14/17), bounded $[0, 1]$, zero NaNs | 100% compliant split and scaling | Passed (`tests/test_data_pipeline.py`) |
+| **TC-025** | Pipeline | Adversarial flow sanitization | Pipeline initialized | Dirty dataset with infs, NaNs, duplicates, socket IPs | Socket metadata pruned, median imputation executed | Zero leakage verified | Passed (`tests/test_data_pipeline.py`) |
+| **TC-026** | Pipeline | Strict validation rejection | Strict validation enabled | Flow DataFrame missing `Flow Duration` | Validation halted with clear error description | Schema contract error raised | Passed (`tests/test_data_pipeline.py`) |
+| **TC-027** | Pipeline | Train/test parameter isolation | Pipeline fitted on train | Test partition transformed multiple times | Parameters unchanged across multiple transform calls | Leakage isolation confirmed | Passed (`tests/test_data_pipeline.py`) |
+| **TC-028** | Pipeline | Micro-batch streaming | Pipeline fitted | Full dataset streamed in micro-batches (size 20) | Streamed outputs match batch transformation | Equivalence verified | Passed (`tests/test_data_pipeline.py`) |
+| **TC-029** | Pipeline | Artifact serialization roundtrip | Pipeline fitted | Exported artifacts (`.json`, `.joblib`) | Deserialized pipeline reproduces identical predictions | Zero delta verified | Passed (`tests/test_data_pipeline.py`) |
+| **TC-030** | Pipeline | CIC-IoT2023 label consolidation | Pipeline initialized | IoT records with 33 sub-classes | 33 granular classes consolidated into 8 parent families | Consolidation confirmed | Passed (`tests/test_data_pipeline.py`) |
+| **TC-031** | Pipeline | Unfitted transform protection | Unfitted pipeline | Transform or stream call | RuntimeError raised preventing silent prediction failure | Exception verified | Passed (`tests/test_data_pipeline.py`) |
+| **TC-032** | Pipeline | Schema metadata JSON contract | Pipeline fitted | Exported `feature_columns.json` | Conforms to backend model registry specification | Contract validated | Passed (`tests/test_data_pipeline.py`) |
+| **TC-033** | Pipeline | Scaler flexibility | Pipeline initialized | Standard & Robust scalers | Features scaled accurately without inf/NaN artifacts | Validated across scalers | Passed (`tests/test_data_pipeline.py`) |
+| **TC-034** | Baseline | Baseline model suite initialization | Models loaded | RF, DT, LR, Gaussian NB | Default configurations instantiated and ready | Suite initialized | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-035** | Baseline | Binary attack classification | Preprocessed pipeline output | Train/test features with binary labels | Converged models yielding predictions in $\{0, 1\}$ | Binary classification verified | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-036** | Baseline | Multiclass attack classification | Preprocessed pipeline output | Train/test features with multiclass targets | Multiclass predictions mapped to $[0, K-1]$ | Multiclass classification verified | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-037** | Baseline | Evaluator metric calculations | Model predictions & truth | Accuracy, precision, recall, F1, FPR, ROC-AUC | Correct metrics computed conforming to mathematical bounds | Math validation confirmed | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-038** | Baseline | Minority class performance tracking | Imbalanced flow data | Per-class breakdown on rare attacks (Bot) | Accurately identifies recall drop on rare attacks | Minority tracking confirmed | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-039** | Baseline | Model persistence roundtrip | Fitted baseline model | Joblib serialization | Re-loaded model outputs identical class predictions | Bit-for-bit equivalence | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-040** | Baseline | Comparative benchmarking report | All baseline models evaluated | Summary metrics across 4 algorithms | Markdown and tabular comparison generated | Comparison table generated | Passed (`tests/test_baseline_evaluation.py`) |
 
 ---
 

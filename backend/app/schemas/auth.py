@@ -1,9 +1,13 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
-    username: EmailStr
-    password: str
+    # extra="forbid": unknown fields are rejected instead of silently ignored
+    model_config = ConfigDict(extra="forbid")
+
+    username: EmailStr = Field(max_length=254)
+    # max_length stops someone sending a huge password to slow down hashing
+    password: str = Field(min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):
@@ -13,4 +17,6 @@ class TokenResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    model_config = ConfigDict(extra="forbid")
+
+    refresh_token: str = Field(min_length=1, max_length=2048)

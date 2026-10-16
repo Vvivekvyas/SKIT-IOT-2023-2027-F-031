@@ -119,26 +119,53 @@ def merge_datasets(df_cicids: pd.DataFrame, df_ciciot: pd.DataFrame) -> pd.DataF
 
 
 # --------------------------------------------------------------------------
-# 3. Encode + normalize
+# 3. Encode + normalize (No Data Leakage: fit strictly on train split)
 # --------------------------------------------------------------------------
-def encode_and_scale(df: pd.DataFrame):
+def split_and_preprocess(df: pd.DataFrame, test_size: float = 0.2, random_state: int = RANDOM_STATE):
     y_raw = df["Label"].astype(str).str.strip()
     is_benign = y_raw.str.lower().isin({"benign", "normal", "background"})
-
-    label_encoder = LabelEncoder()
-    y = label_encoder.fit_transform(y_raw)
-    y_binary = (~is_benign).astype(int)  # 0 = benign, 1 = attack (any type)
+    y_binary = (~is_benign).astype(int)
 
     feature_cols = [c for c in df.columns if c not in ("Label", "dataset_source")]
-    X = df[feature_cols].astype(float)
+    X_df = df[feature_cols].astype(float)
 
+    # Stratified train/test split BEFORE fitting any transformations
+    indices = np.arange(len(df))
+    idx_train, idx_test = train_test_split(
+        indices, test_size=test_size, random_state=random_state, stratify=y_binary
+    )
+
+    X_train_raw = X_df.iloc[idx_train].copy()
+    X_test_raw = X_df.iloc[idx_test].copy()
+    y_train_raw = y_raw.iloc[idx_train].copy()
+    y_test_raw = y_raw.iloc[idx_test].copy()
+    yb_train = y_binary.iloc[idx_train].values
+    yb_test = y_binary.iloc[idx_test].values
+
+    # Fit LabelEncoder strictly on training labels
+    label_encoder = LabelEncoder()
+    y_train = label_encoder.fit_transform(y_train_raw)
+    known_classes = set(label_encoder.classes_)
+    y_test = np.array([
+        label_encoder.transform([lbl])[0] if lbl in known_classes else -1
+        for lbl in y_test_raw
+    ])
+
+    # Fit StandardScaler strictly on training features
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_train_scaled = scaler.fit_transform(X_train_raw)
+    X_test_scaled = scaler.transform(X_test_raw)
+
+    X_train = pd.DataFrame(X_train_scaled, columns=feature_cols)
+    X_test = pd.DataFrame(X_test_scaled, columns=feature_cols)
 
     return (
-        pd.DataFrame(X_scaled, columns=feature_cols),
-        y,
-        y_binary,
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+        yb_train,
+        yb_test,
         feature_cols,
         label_encoder,
         scaler,
@@ -150,8 +177,7 @@ def encode_and_scale(df: pd.DataFrame):
 # --------------------------------------------------------------------------
 def save_feature_schema(feature_cols, label_encoder, scaler, config_dir: str):
     """Writes feature_columns.json for model_registry.py to consume at
-    inference time (schema alignment) — update this to match the real
-    contract once you paste in model_registry.py."""
+    inference time (schema alignment)."""
     os.makedirs(config_dir, exist_ok=True)
 
     schema = {
@@ -171,12 +197,8 @@ def save_feature_schema(feature_cols, label_encoder, scaler, config_dir: str):
           f"{len(label_encoder.classes_)} classes)")
 
 
-def save_processed(X: pd.DataFrame, y, y_binary, out_dir: str):
+def save_processed_splits(X_train, X_test, y_train, y_test, yb_train, yb_test, out_dir: str):
     os.makedirs(out_dir, exist_ok=True)
-    X_train, X_test, y_train, y_test, yb_train, yb_test = train_test_split(
-        X, y, y_binary, test_size=0.2, random_state=RANDOM_STATE, stratify=y_binary
-    )
-
     for name, data in [
         ("X_train", X_train), ("X_test", X_test),
         ("y_train_multiclass", pd.Series(y_train, name="label")),
@@ -198,15 +220,25 @@ def run(cicids_dir: str, ciciot_dir: str, out_dir: str, config_dir: str):
     df_ciciot = clean(load_ciciot2023(ciciot_dir))
     merged = merge_datasets(df_cicids, df_ciciot)
 
-    X, y, y_binary, feature_cols, label_encoder, scaler = encode_and_scale(merged)
+    (
+        X_train,
+        X_test,
+        y_train,
+        y_test,
+        yb_train,
+        yb_test,
+        feature_cols,
+        label_encoder,
+        scaler,
+    ) = split_and_preprocess(merged)
 
-    save_processed(X, y, y_binary, out_dir)
+    save_processed_splits(X_train, X_test, y_train, y_test, yb_train, yb_test, out_dir)
     save_feature_schema(feature_cols, label_encoder, scaler, config_dir)
     joblib.dump(scaler, os.path.join(config_dir, "scaler.joblib"))
     joblib.dump(label_encoder, os.path.join(config_dir, "label_encoder.joblib"))
 
     print("\n[SUCCESS] Dataset loading pipeline complete.")
-    print(f"  rows: {len(merged)}  |  features: {len(feature_cols)}  |  classes: {len(label_encoder.classes_)}")
+    print(f"  total rows: {len(merged)} | features: {len(feature_cols)} | classes: {len(label_encoder.classes_)}")
 
 
 if __name__ == "__main__":

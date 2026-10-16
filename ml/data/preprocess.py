@@ -65,28 +65,30 @@ def identify_columns(df, label_column):
     return numeric_columns, non_numeric_columns
 
 
-def scale_numeric_features(df, numeric_columns):
+def scale_numeric_features(df, numeric_columns, scaler=None):
     """
-    This is useful because network-flow features can have very different numerical ranges.
-    For example, one feature might be: 0.001, while another might be: 1000000.0. Scaling ensures that all features contribute equally to the model's learning process.
+    Scale numeric features. If scaler is None, fits on df.
+    If a fitted scaler is provided, reuses it without data leakage.
     """
-
     df = df.copy()
 
-    scaler = StandardScaler()
+    # Fill any unexpected inf/nan prior to scaling
+    df[numeric_columns] = df[numeric_columns].replace([np.inf, -np.inf], np.nan)
+    df[numeric_columns] = df[numeric_columns].fillna(0.0)
 
-    df[numeric_columns] = scaler.fit_transform(
-        df[numeric_columns]
-    )
+    if scaler is None:
+        scaler = StandardScaler()
+        df[numeric_columns] = scaler.fit_transform(df[numeric_columns])
+    else:
+        df[numeric_columns] = scaler.transform(df[numeric_columns])
 
     return df, scaler
 
 
-def preprocess_features(df, label_column):
+def preprocess_features(df, label_column, scaler=None):
     """
     Identify and scale numeric features.
     """
-
     numeric_columns, non_numeric_columns = identify_columns(
         df,
         label_column
@@ -94,7 +96,8 @@ def preprocess_features(df, label_column):
 
     processed_df, scaler = scale_numeric_features(
         df,
-        numeric_columns
+        numeric_columns,
+        scaler=scaler,
     )
 
     return (

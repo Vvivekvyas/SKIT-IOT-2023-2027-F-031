@@ -94,12 +94,15 @@ def load_dataset_folder(
             continue
 
         # Keep track of original file
-        df["Source_File"] = str(
-            file.relative_to(folder_path)
-        )
+        rel_path = file.relative_to(folder_path)
+        df["Source_File"] = str(rel_path)
 
         if dataset_name is not None:
             df["Dataset"] = dataset_name
+
+        # Derive Attack_Category from parent directory if organized in subdirectories (e.g. CIC-IoT2023)
+        if len(rel_path.parts) > 1 and "Attack_Category" not in df.columns:
+            df["Attack_Category"] = rel_path.parts[0]
 
         dataframes.append(df)
 

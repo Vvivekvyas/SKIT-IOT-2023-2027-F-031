@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE_MB: int = 200
 
+    # Data pipeline integration (the ML team's code in the repo's top-level src/data).
+    # Leave PIPELINE_ROOT empty to use the repo root automatically.
+    PIPELINE_ROOT: str | None = None
+    # Validation reads at most this many rows (large CSVs would use too much memory).
+    VALIDATION_SAMPLE_ROWS: int = 100_000
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

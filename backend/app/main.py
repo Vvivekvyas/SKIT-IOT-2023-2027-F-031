@@ -5,6 +5,7 @@ Run with: uvicorn app.main:app --reload
 Before first run: python -m app.db.seed
 """
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,10 +16,19 @@ from app.core.deps import CurrentUser, get_current_user
 from app.core.errors import register_error_handlers
 from app.core.limiter import limiter
 from app.core.middleware import RequestIDMiddleware
+from app.db.schema import ensure_schema
 
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title=settings.APP_NAME)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Make sure tables and newer columns exist before the first request.
+    ensure_schema()
+    yield
+
+
+app = FastAPI(title=settings.APP_NAME, lifespan=lifespan)
 app.state.limiter = limiter
 register_error_handlers(app)
 

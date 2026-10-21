@@ -5,6 +5,7 @@ POST   /datasets/upload              upload a CSV (analyst, admin)
 GET    /datasets                     list datasets, newest first (analyst, admin)
 GET    /datasets/{id}                dataset details (analyst, admin)
 GET    /datasets/{id}/status         processing status (analyst, admin)
+GET    /datasets/{id}/validation     data-pipeline validation report (analyst, admin)
 GET    /datasets/{id}/preview        first rows of the CSV (analyst, admin)
 POST   /datasets/{id}/process        re-run processing (analyst, admin)
 DELETE /datasets/{id}                delete dataset + file (admin only)
@@ -12,11 +13,16 @@ DELETE /datasets/{id}                delete dataset + file (admin only)
 Upload checks: .csv extension, allowed content type, not empty, not binary,
 header line present, size limit. A bad upload never leaves a file behind.
 
-Processing counts the rows in the background and flips status to
-"processed" (or "failed"). This is the handoff point to the ML
-preprocessing pipeline on Nancy's side.
+Processing runs in the background: it counts the rows, then runs the ML
+team's validator (src/data) through app/services/data_pipeline.py.
+Status values:
+  processing  still running
+  processed   finished (is_valid true, or null if validation was skipped)
+  invalid     finished, but the file failed validation or is not a known dataset
+  failed      the file could not be read as a CSV
 """
 import csv
+import json
 import logging
 import os
 import re
@@ -27,6 +33,7 @@ from fastapi import (
     APIRouter,
     BackgroundTasks,
     Depends,
+    Form,
     HTTPException,
     Path,
     Query,
@@ -46,7 +53,9 @@ from app.schemas.dataset import (
     DatasetPreviewResponse,
     DatasetStatusResponse,
     DatasetUploadResponse,
+    DatasetValidationResponse,
 )
+from app.services.data_pipeline import KNOWN_DATASET_TYPES, PipelineUnavailable, run_validation
 
 logger = logging.getLogger("ids.api")
 
@@ -121,14 +130,18 @@ def _to_detail(dataset: Dataset) -> DatasetDetailResponse:
         rows=dataset.rows,
         size_bytes=size,
         uploaded_at=dataset.uploaded_at,
+        dataset_type=dataset.dataset_type,
+        is_valid=dataset.is_valid,
+        message=dataset.message,
     )
 
 
 def _process_dataset(dataset_id: str) -> None:
     """
     Runs in the background after the response is already sent.
-    Counts rows and updates the dataset's status. Uses its own DB session
-    since background tasks run outside the request's session lifecycle.
+    Counts rows, runs the data-pipeline validation, and saves the outcome.
+    Uses its own DB session since background tasks run outside the request's
+    session lifecycle.
     """
     db = SessionLocal()
     try:
@@ -136,13 +149,32 @@ def _process_dataset(dataset_id: str) -> None:
         if dataset is None:
             return
         try:
-            with open(_file_path(dataset_id), newline="", encoding="utf-8", errors="replace") as f:
-                row_count = sum(1 for _ in csv.reader(f)) - 1  # minus header
-            dataset.rows = max(row_count, 0)
-            dataset.status = "processed"
+            path = _file_path(dataset_id)
+            with open(path, newline="", encoding="utf-8", errors="replace") as f:
+                total_rows = max(sum(1 for _ in csv.reader(f)) - 1, 0)  # minus header
+            dataset.rows = total_rows
+
+            try:
+                result = run_validation(path, dataset.dataset_type, total_rows)
+            except PipelineUnavailable as exc:
+                # Validation can't run here, but the upload itself is fine.
+                logger.warning("Validation skipped for %s: %s", dataset_id, exc)
+                dataset.status = "processed"
+                dataset.is_valid = None
+                dataset.message = f"Validation skipped: {exc}."
+            else:
+                dataset.dataset_type = result["dataset_type"]
+                dataset.is_valid = result["valid"]
+                dataset.message = result["message"]
+                dataset.validation_report = (
+                    json.dumps(result["report"], default=str) if result["report"] else None
+                )
+                dataset.status = "processed" if result["valid"] else "invalid"
         except Exception:
             logger.exception("Processing failed for dataset %s", dataset_id)
             dataset.status = "failed"
+            dataset.is_valid = None
+            dataset.message = "Could not read the file as a CSV."
         db.commit()
     finally:
         db.close()
@@ -154,9 +186,20 @@ def _process_dataset(dataset_id: str) -> None:
 def upload_dataset(
     background_tasks: BackgroundTasks,
     file: UploadFile,
+    dataset_type: Annotated[
+        str | None,
+        Form(description="CICIDS2017 or CIC-IoT2023. Leave empty to detect it from the columns."),
+    ] = None,
     db: Session = Depends(get_db),
     user: CurrentUser = Depends(require_role("analyst")),
 ):
+    dataset_type = (dataset_type or "").strip() or None
+    if dataset_type is not None and dataset_type not in KNOWN_DATASET_TYPES:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"dataset_type must be one of: {', '.join(KNOWN_DATASET_TYPES)}",
+        )
+
     filename = _clean_filename(file.filename)
     if not filename.lower().endswith(".csv"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only .csv files are accepted")
@@ -184,7 +227,9 @@ def upload_dataset(
 
         _validate_csv_file(file_path)
 
-        db.add(Dataset(id=dataset_id, name=filename, status="processing"))
+        db.add(
+            Dataset(id=dataset_id, name=filename, status="processing", dataset_type=dataset_type)
+        )
         db.commit()
     except Exception:
         # Any failure: don't leave a half-saved file behind.
@@ -240,6 +285,31 @@ def get_dataset_status(
         status=dataset.status,
         rows=dataset.rows,
         uploaded_at=dataset.uploaded_at,
+        is_valid=dataset.is_valid,
+        message=dataset.message,
+    )
+
+
+@router.get("/{dataset_id}/validation", response_model=DatasetValidationResponse)
+def get_dataset_validation(
+    dataset_id: DatasetId,
+    db: Session = Depends(get_db),
+    user: CurrentUser = Depends(require_role("analyst")),
+):
+    dataset = _get_dataset_or_404(db, dataset_id)
+    if dataset.status == "processing":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Validation is still running")
+    if not dataset.validation_report:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            dataset.message or "No validation report for this dataset",
+        )
+    return DatasetValidationResponse(
+        dataset_id=dataset.id,
+        dataset_type=dataset.dataset_type,
+        status=dataset.status,
+        is_valid=dataset.is_valid,
+        report=json.loads(dataset.validation_report),
     )
 
 
@@ -285,6 +355,9 @@ def reprocess_dataset(
         )
     dataset.status = "processing"
     dataset.rows = None
+    dataset.is_valid = None
+    dataset.validation_report = None
+    dataset.message = None
     db.commit()
     background_tasks.add_task(_process_dataset, dataset.id)
     return DatasetUploadResponse(dataset_id=dataset.id, status="processing")

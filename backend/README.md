@@ -1,54 +1,61 @@
-# ids-api — Week 7: API validation + error handling
+# ids-api — Week 8: Backend integration for dataset endpoints
 
 ## What's new this week
 
-**One error format for everything.** Every error looks like this:
+The dataset endpoints now use the ML team's real data code (`src/data` in the repo
+root) instead of only counting rows.
 
-```json
-{
-  "data": null,
-  "meta": {"request_id": "3f2a..."},
-  "error": {"code": "not_found", "message": "Dataset not found", "details": null}
-}
-```
+After an upload, the backend runs in the background:
+1. counts the rows,
+2. works out which dataset it is (CICIDS2017 or CIC-IoT2023) from the column names,
+   or uses the `dataset_type` you chose at upload,
+3. runs the ML team's `DatasetValidator` and saves the report.
 
-| Status | `error.code` |
+Only the first 100,000 rows are checked (setting `VALIDATION_SAMPLE_ROWS`), so a
+huge CSV cannot use all the memory. The message says when a file was sampled.
+
+### Dataset status values
+
+| Status | Meaning |
 |---|---|
-| 400 | `bad_request` |
-| 401 | `unauthorized` |
-| 403 | `forbidden` |
-| 404 | `not_found` |
-| 405 | `method_not_allowed` |
-| 409 | `conflict` |
-| 413 | `payload_too_large` |
-| 422 | `validation_error` (lists each bad field in `details`) |
-| 429 | `rate_limited` |
-| 500 | `internal_error` (generic message; the real error goes only to the server log) |
+| `processing` | still running |
+| `processed` | finished. `is_valid` is `true`, or `null` if validation was skipped |
+| `invalid` | finished, but the file failed validation or matches no known dataset |
+| `failed` | the file could not be read as a CSV |
 
-**Request IDs.** Every response has an `X-Request-ID` header. The same ID is in the
-error body and in the server log line, so one failing request can be traced.
-A client may send its own `X-Request-ID` (letters, digits, dashes, max 64).
+### Endpoint changes
 
-**Stricter input checks**
-- Login: valid email, password 1-128 characters, unknown fields rejected
-- Refresh token: 1-2048 characters, unknown fields rejected
-- Dataset ID in the URL must be a UUID (otherwise 422)
-- Upload: `.csv` extension and allowed content type required, file not empty,
-  not binary, header line present, size limit. File name is cleaned (no folders,
-  no control characters). A failed upload never leaves a file on disk
-- Predict request (for the future `/predict`): flat feature dictionary, 1-500
-  features, no nested values, unknown fields rejected
+- `POST /datasets/upload` — new optional form field `dataset_type`
+  (`CICIDS2017` or `CIC-IoT2023`). Leave it empty to auto-detect.
+- `GET /datasets/{id}/validation` — **new.** The full validation report
+  (missing columns, leakage columns, NaN/infinite counts, duplicates, bad labels,
+  negative values). `409` while still running, `404` if there is no report
+  (the message says why).
+- `GET /datasets`, `GET /datasets/{id}`, `GET /datasets/{id}/status` now also return
+  `dataset_type`, `is_valid` and `message`.
+- `POST /datasets/{id}/process` clears the old result and validates again.
 
-Validation errors never echo the submitted value back (so a password is not repeated).
+### If the ML code is not available
+
+If `src/data` is missing or `pandas` is not installed, uploads still work. The
+dataset ends as `processed` with `is_valid: null` and a message saying validation
+was skipped. Nothing crashes.
+
+## Database
+
+`python -m app.db.seed` now also adds the new columns to an existing database, so
+you do **not** need to delete `ids_dev.db`. The server does the same check on start-up.
 
 ## Run it
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env   # then set a real JWT_SECRET_KEY
+pip install -r requirements.txt   # adds pandas, numpy, joblib
 python -m app.db.seed
 uvicorn app.main:app --reload
 ```
+
+Run it from inside `backend/`. The backend finds `src/data` by itself (the repo root
+is one folder above `backend`). To point somewhere else, set `PIPELINE_ROOT` in `.env`.
 
 Docs: http://localhost:8000/docs
 
@@ -56,16 +63,16 @@ Docs: http://localhost:8000/docs
 
 ```
 app/
-  core/       config, security, auth dependency, rate limiter,
-              errors.py (error format), middleware.py (request IDs + logging)
-  db/         database.py, seed.py
+  core/       config, security, auth dependency, rate limiter, errors, middleware
+  db/         database.py, schema.py (tables + new columns), seed.py
   models/     SQLAlchemy tables
+  services/   data_pipeline.py (the link to src/data)
   api/v1/     auth.py, datasets.py
   schemas/    Pydantic request/response models
 ```
 
 ## Not yet done
 
-- Successful responses are still plain JSON (only errors use the envelope above).
-  Wrapping them too needs a decision with the frontend first.
 - `/predict` does not exist yet (waits for a trained model).
+- The validator checks a dataset but the API does not run the full cleaning/scaling
+  pipeline (`DataPipeline`) yet. That is a training-time step on the ML side.

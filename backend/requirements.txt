@@ -11,3 +11,7 @@ python-multipart==0.0.32
 slowapi==0.1.10
 SQLAlchemy==2.1.4
 uvicorn==0.54.0
+# Week 8: needed by the ML team's src/data code that the dataset endpoints now call
+pandas>=2.0
+numpy>=1.26
+joblib>=1.3

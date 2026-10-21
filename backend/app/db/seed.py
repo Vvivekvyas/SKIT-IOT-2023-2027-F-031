@@ -2,13 +2,13 @@
 Run once to set up your local database:
     python -m app.db.seed
 
-Creates all tables and inserts two test users (analyst + admin),
-skipping any that already exist. Safe to re-run.
+Creates the tables, adds any new columns to an existing database, and inserts
+two test users (analyst + admin), skipping any that already exist.
+Safe to re-run.
 """
 from app.core.security import hash_password
-from app.db.database import Base, SessionLocal, engine
-from app.models.dataset import Dataset  # noqa: F401 — imported so create_all sees it
-from app.models.prediction import Prediction  # noqa: F401
+from app.db.database import SessionLocal
+from app.db.schema import ensure_schema
 from app.models.user import User
 
 TEST_USERS = [
@@ -18,7 +18,8 @@ TEST_USERS = [
 
 
 def seed():
-    Base.metadata.create_all(bind=engine)
+    for column in ensure_schema():
+        print(f"Added new column: {column}")
 
     db = SessionLocal()
     try:

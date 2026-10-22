@@ -11,10 +11,10 @@ This document provides the formal test case specifications for the **Hybrid ML B
 
 | Total Test Cases | Planned / Draft | Passed | Failed | Blocked |
 | :---: | :---: | :---: | :---: | :---: |
-| 40 | 13 | 27 | 0 | 0 |
+| 51 | 13 | 38 | 0 | 0 |
 
 > [!TIP]
-> Complete test execution matrices, code coverage audits, and data leakage verification are documented in the [Preprocessing Test Report (Week 5)](../reports/PREPROCESSING_TEST_REPORT.md), [Data Pipeline Test Report (Week 6)](../reports/DATA_PIPELINE_TEST_REPORT.md), and [Baseline Evaluation Report (Week 7)](../reports/BASELINE_EVALUATION_REPORT.md).
+> Complete test execution matrices, code coverage audits, and data leakage verification are documented in the [Preprocessing Test Report (Week 5)](../reports/PREPROCESSING_TEST_REPORT.md), [Data Pipeline Test Report (Week 6)](../reports/DATA_PIPELINE_TEST_REPORT.md), [Baseline Evaluation Report (Week 7)](../reports/BASELINE_EVALUATION_REPORT.md), and [Data Pipeline Integration Test Report (Week 8)](../reports/WEEK_08_DATA_PIPELINE_TEST_REPORT.md).
 
 ---
 
@@ -62,6 +62,17 @@ This document provides the formal test case specifications for the **Hybrid ML B
 | **TC-038** | Baseline | Minority class performance tracking | Imbalanced flow data | Per-class breakdown on rare attacks (Bot) | Accurately identifies recall drop on rare attacks | Minority tracking confirmed | Passed (`tests/test_baseline_evaluation.py`) |
 | **TC-039** | Baseline | Model persistence roundtrip | Fitted baseline model | Joblib serialization | Re-loaded model outputs identical class predictions | Bit-for-bit equivalence | Passed (`tests/test_baseline_evaluation.py`) |
 | **TC-040** | Baseline | Comparative benchmarking report | All baseline models evaluated | Summary metrics across 4 algorithms | Markdown and tabular comparison generated | Comparison table generated | Passed (`tests/test_baseline_evaluation.py`) |
+| **TC-041** | Ingestion/Pipeline | Auto-detect CICIDS2017 schema headers | Feature columns supplied | CSV header with >= 50% CICIDS2017 mandatory features | Service resolves `dataset_type="CICIDS2017"` | Auto-detection verified | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-042** | Ingestion/Pipeline | Auto-detect CIC-IoT2023 schema headers | Feature columns supplied | CSV header with >= 50% CIC-IoT2023 mandatory features | Service resolves `dataset_type="CIC-IoT2023"` | Auto-detection verified | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-043** | Ingestion/Pipeline | Reject unrecognized dataset schemas | Feature columns supplied | Arbitrary non-network CSV headers | Returns `None` preventing false dataset categorization | Rejected with `None` | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-044** | Ingestion/Pipeline | Backend validation of valid CICIDS2017 file | Ingestion service active | Synthetic 100-sample CICIDS2017 CSV file | Returns `valid=True`, full report, zero errors | Valid report generated | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-045** | Ingestion/Pipeline | Backend validation of valid CIC-IoT2023 file | Ingestion service active | Synthetic 100-sample CIC-IoT2023 CSV file | Returns `valid=True`, full report, label mapped | Valid report generated | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-046** | Ingestion/Pipeline | Graceful rejection of unknown CSV file | Ingestion service active | Generic 2-column CSV file | Returns `valid=False`, `report=None`, explanatory message | Handled with clear message | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-047** | Ingestion/Pipeline | Validation failure on missing mandatory columns | Ingestion service active | CSV missing `Flow Duration` and `Total Fwd Packets` | Returns `valid=False`, validator report enumerating missing cols | Missing features flagged | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-048** | Ingestion/Pipeline | Sampling threshold enforcement on large CSV | Ingestion service active | High-volume CSV exceeding `VALIDATION_SAMPLE_ROWS` | Caps rows checked to sample limit, sets `sampled=True` | Memory-safe sampling verified | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-049** | Ingestion/Pipeline | Missing pipeline code exception propagation | Invalid `PIPELINE_ROOT` | Invocation of `run_validation` or `_load` | Raises `PipelineUnavailable` without crashing API | Clean exception raised | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-050** | Ingestion/Pipeline | End-to-end ingestion to DataPipeline fit & export | Valid CSV ingested | Ingested valid CSV passed to `DataPipeline.fit_transform` | Stratified splits bounded $[0, 1]$, schema contract exported | End-to-end transformation verified | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-051** | Ingestion/Pipeline | Micro-batch streaming throughput benchmark | Ingestion service & pipeline fitted | 2,000 synthetic flows streamed in chunks of 100 | Throughput exceeds 1,000 flows/second, zero NaNs/infs | 2,000 flows streamed in < 2.0s (> 1,400 flows/s) | Passed (`tests/test_data_pipeline_integration.py`) |
 
 ---
 

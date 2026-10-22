@@ -138,6 +138,7 @@ The system is developed and benchmarked on two benchmark intrusion detection dat
 | **Week 5** | Preprocessing Test Report (`docs/reports/PREPROCESSING_TEST_REPORT.md`), GitHub Milestone 5 (`.github/MILESTONES/WEEK_05_MILESTONE.md`) | Ronak | **Completed** |
 | **Week 6** | Data Pipeline Orchestration & Tests (`tests/test_data_pipeline.py`), Pipeline Test Report (`docs/reports/DATA_PIPELINE_TEST_REPORT.md`), GitHub Milestone 6 | Ronak | **Completed** |
 | **Week 7** | Baseline ML Models & Evaluation Test Suite (`tests/test_baseline_evaluation.py`), Baseline Evaluation Report (`docs/reports/BASELINE_EVALUATION_REPORT.md`), GitHub Milestone 7 | Ronak | **Completed** |
+| **Week 8** | Data Pipeline Integration & Tests (`tests/test_data_pipeline_integration.py`), Ingestion Test Report (`docs/reports/WEEK_08_DATA_PIPELINE_TEST_REPORT.md`), GitHub Milestone 8 | Ronak | **Completed** |
 | **Weeks 8–9** | Variational Autoencoder (VAE) Latent Model Architecture & Training Formulation | Team | Planned |
 | **Weeks 10–11** | Feature Tokenizer & FT-Transformer Classifier Construction | Team | Planned |
 | **Weeks 12–13** | End-to-End Hybrid Pipeline Training, Loss Tuning, Backend API Service (FastAPI) | Team | Planned |
@@ -148,7 +149,7 @@ The system is developed and benchmarked on two benchmark intrusion detection dat
 ## 👥 Team Responsibilities
 
 - **Vivek Vyas**: System Architecture, Test Strategy, Backend API & Database Schema, Lead Coordination.
-- **Ronak**: Data Ingestion & Preprocessing Pipeline (`src/data/`), Data Validation Test Suite (`tests/`), Preprocessing Test Report (`docs/reports/PREPROCESSING_TEST_REPORT.md`), Data Pipeline Orchestrator & Tests (`docs/reports/DATA_PIPELINE_TEST_REPORT.md`), Baseline Models & Evaluation Engine (`docs/reports/BASELINE_EVALUATION_REPORT.md`), GitHub Milestones 5, 6 & 7.
+- **Ronak**: Data Ingestion & Preprocessing Pipeline (`src/data/`), Data Validation Test Suite (`tests/`), Preprocessing Test Report (`docs/reports/PREPROCESSING_TEST_REPORT.md`), Data Pipeline Orchestrator & Tests (`docs/reports/DATA_PIPELINE_TEST_REPORT.md`), Baseline Models & Evaluation Engine (`docs/reports/BASELINE_EVALUATION_REPORT.md`), Data Pipeline Integration Test Suite (`docs/reports/WEEK_08_DATA_PIPELINE_TEST_REPORT.md`), GitHub Milestones 5, 6, 7 & 8.
 - **Team**: Model Training, Transformer Engineering, API Serving, and QA Integration.
 
 ---

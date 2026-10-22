@@ -1,5 +1,8 @@
 """Pytest fixtures providing synthetic flow records for testing."""
 
+import os
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-32-chars-long-minimum-ids-secret")
+
 import pytest
 import numpy as np
 import pandas as pd

@@ -1,23 +1,76 @@
 project:
   name: hybrid-ml-ids
+  role: nancy-ml-backend
+  version: 0.2.0
 
 datasets:
   cicids2017:
     enabled: true
     raw_dir: data/raw/CICIDS2017
+    label_column: Label
+    num_classes: 15
 
   cic_iot2023:
     enabled: true
     raw_dir: data/raw/CIC-IoT2023
+    label_column: Attack_Category
+    num_classes: 34
 
 data:
   processed_dir: data/processed
+  sample_size_training: 200000
+  splitting:
+    train_ratio: 0.70
+    val_ratio: 0.15
+    test_ratio: 0.15
+    stratify: true
+    random_seed: 42
+  feature_exclusion:
+    - Source_File
+    - Dataset
+    - Source IP
+    - Destination IP
+    - Source Port
+    - Destination Port
+    - Timestamp
 
 models:
-  baseline: true
-  ft_transformer: true
-  autoencoder: true
-  hybrid: true
+  baseline:
+    enabled: true
+    algorithms:
+      - random_forest
+      - logistic_regression
+
+  ft_transformer:
+    enabled: true
+    embedding_dim: 64
+    num_heads: 4
+    num_layers: 3
+    ffn_factor: 2
+    dropout: 0.1
+    learning_rate: 0.0005
+    batch_size: 256
+    max_epochs: 25
+    loss: focal_loss
+    focal_gamma: 2.0
+
+  autoencoder:
+    enabled: true
+    latent_dim: 16
+    hidden_dims:
+      - 64
+      - 32
+    dropout: 0.05
+    learning_rate: 0.001
+    batch_size: 256
+    max_epochs: 30
+    anomaly_threshold_percentile: 99.0
+
+  hybrid:
+    enabled: true
+    decision_strategy: threshold_triage
+    confidence_threshold: 0.85
+    zero_day_anomaly_threshold: 0.70
 
 evaluation:
   metrics:
@@ -25,3 +78,5 @@ evaluation:
     - precision
     - recall
     - f1_score
+    - macro_f1
+    - pr_auc

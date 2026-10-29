@@ -1,6 +1,7 @@
 """
-Prediction table — stores each classification result. Doubles as the source
-for the /alerts endpoints (an "alert" is simply a non-Normal prediction).
+Prediction table - stores each classification result. Doubles as the source
+for the /alerts endpoints (an "alert" is simply a non-normal prediction).
+Only the result is stored, never the submitted feature values.
 """
 import uuid
 from datetime import datetime, timezone
@@ -16,8 +17,9 @@ class Prediction(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     classification: Mapped[str] = mapped_column(String, nullable=False)
-    # "Normal" | "DoS" | "Probe" | "R2L" | "U2R"
+    # The model's class name, e.g. "BENIGN", "DDoS", "Suspected_Anomaly"
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    anomaly_score: Mapped[float] = mapped_column(Float, nullable=True)
     model_version: Mapped[str] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)

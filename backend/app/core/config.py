@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENV: str = "development"  # development | staging | production
 
     # Auth / JWT
-    JWT_SECRET_KEY: str  # required, no default — must come from env/secret manager
+    JWT_SECRET_KEY: str  # required, no default - must come from env/secret manager
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./ids_dev.db"
 
-    # CORS — locked to known frontend origins, never "*"
+    # CORS - locked to known frontend origins, never "*"
     ALLOWED_ORIGINS: list[str] = ["http://localhost:5173"]
 
     # Rate limiting
@@ -38,6 +38,13 @@ class Settings(BaseSettings):
     PIPELINE_ROOT: str | None = None
     # Validation reads at most this many rows (large CSVs would use too much memory).
     VALIDATION_SAMPLE_ROWS: int = 100_000
+
+    # Prediction API (Week 9)
+    # Path to a trained checkpoint (format in docs/api/PREDICT_API.md). Empty = none yet.
+    PREDICT_MODEL_PATH: str | None = None
+    # Run the real model code with UNTRAINED random weights so the API can be demoed.
+    # Ignored when ENV=production. Responses are labelled "demo-untrained".
+    PREDICT_DEMO_MODE: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

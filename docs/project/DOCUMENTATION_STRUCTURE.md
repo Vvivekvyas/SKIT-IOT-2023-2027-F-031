@@ -57,6 +57,7 @@ docs/
   - `DATA_PIPELINE_TEST_REPORT.md`: Exhaustive integration test report detailing end-to-end data pipeline orchestration, streaming generators, schema serialization, and leakage isolation (Week 6 deliverable by Ronak).
   - `BASELINE_EVALUATION_REPORT.md`: Comprehensive baseline model benchmark report detailing classification performance, minority attack tracking, and TC-021/TC-022 latency metrics (Week 7 deliverable by Ronak).
   - `WEEK_08_DATA_PIPELINE_TEST_REPORT.md`: Exhaustive integration test report detailing backend dataset endpoint integration, automated schema detection, row sampling, and micro-batch streaming throughput (Week 8 deliverable by Ronak).
+  - `MODEL_COMPARISON_REPORT.md`: Comprehensive model comparison and benchmarking report evaluating 7 machine learning paradigms, Missed-as-Normal security audit, and TC-021/TC-022 SLA latency compliance.
 - **Audience**: Data engineers, ML researchers, reviewers.
 
 ### 5. `docs/testing/`

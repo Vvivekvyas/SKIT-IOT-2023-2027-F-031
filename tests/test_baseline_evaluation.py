@@ -196,3 +196,32 @@ class TestBaselineEvaluation:
         assert "Accuracy" in df.columns
         assert "F1-Macro" in df.columns
         assert "p95 Latency" in df.columns
+
+    def test_tc052_extended_model_comparison_benchmark(self, processed_cicids2017_data):
+        """TC-052: Comprehensive model comparison benchmark across extended baseline algorithms (SVM, Gradient Boosting, MLP)."""
+        dataset = processed_cicids2017_data
+        extended_models = ["random_forest", "decision_tree", "svm", "gradient_boosting", "mlp"]
+        suite = BaselineModelSuite(random_state=42, models_to_include=extended_models)
+        suite.fit_all(dataset.X_train, dataset.y_train_binary)
+
+        evaluator = ModelEvaluator(dataset_name="CICIDS2017")
+        results = []
+        for name in suite.model_names:
+            metrics = evaluator.evaluate(
+                suite.models[name],
+                model_name=name,
+                X_test=dataset.X_test,
+                y_test=dataset.y_test_binary,
+                task_type="binary",
+                latency_benchmark_samples=20,
+            )
+            assert 0.0 <= metrics.accuracy <= 1.0
+            assert metrics.single_flow_latency_p95_ms <= 25.0
+            results.append(metrics)
+
+        comparison_df = evaluator.compare_models(results)
+        assert len(comparison_df) == len(extended_models)
+        assert "random_forest" in comparison_df["Model"].values
+        assert "gradient_boosting" in comparison_df["Model"].values
+        assert "svm" in comparison_df["Model"].values
+

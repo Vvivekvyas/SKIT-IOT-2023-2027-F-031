@@ -9,7 +9,7 @@ their database after an update. Safe to run any number of times.
 from sqlalchemy import inspect, text
 
 from app.db.database import Base, engine
-from app.models.dataset import Dataset  # noqa: F401 — imported so create_all sees it
+from app.models.dataset import Dataset  # noqa: F401 - imported so create_all sees it
 from app.models.prediction import Prediction  # noqa: F401
 from app.models.user import User  # noqa: F401
 
@@ -20,6 +20,9 @@ LATER_COLUMNS = {
         "is_valid": "BOOLEAN",
         "validation_report": "TEXT",
         "message": "VARCHAR",
+    },
+    "predictions": {
+        "anomaly_score": "FLOAT",
     },
 }
 

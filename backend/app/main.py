@@ -10,13 +10,14 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, datasets
+from app.api.v1 import auth, datasets, predict
 from app.core.config import settings
 from app.core.deps import CurrentUser, get_current_user
 from app.core.errors import register_error_handlers
 from app.core.limiter import limiter
 from app.core.middleware import RequestIDMiddleware
 from app.db.schema import ensure_schema
+from app.services.predictor import prediction_service
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,6 +26,8 @@ logging.basicConfig(level=logging.INFO)
 async def lifespan(app: FastAPI):
     # Make sure tables and newer columns exist before the first request.
     ensure_schema()
+    # Load the prediction model once. Never raises; if it fails, /predict answers 503.
+    prediction_service.load()
     yield
 
 
@@ -44,11 +47,12 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(datasets.router, prefix=settings.API_V1_PREFIX)
+app.include_router(predict.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")
 def health():
-    """Public — no auth required."""
+    """Public - no auth required."""
     return {"status": "ok"}
 
 

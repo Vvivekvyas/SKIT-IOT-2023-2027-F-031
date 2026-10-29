@@ -36,8 +36,19 @@ class PredictResponse(BaseModel):
     prediction_id: str
     classification: str
     confidence: float
+    anomaly_score: float | None = None
+    is_alert: bool
+    model_version: str | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ModelInfoResponse(BaseModel):
+    ready: bool
+    model_version: str | None = None
+    message: str | None = None
+    class_names: list[str] = []
+    feature_names: list[str] = []
 
 
 class AlertSummary(BaseModel):

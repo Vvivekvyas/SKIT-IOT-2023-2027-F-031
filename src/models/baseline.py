@@ -6,10 +6,12 @@ Gaussian Naive Bayes) supporting binary and multiclass network flow classificati
 
 from typing import Dict, List, Optional, Tuple, Union, Any
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import LinearSVC
+from sklearn.neural_network import MLPClassifier
 import joblib
 
 
@@ -19,7 +21,9 @@ class BaselineModelSuite:
     prior to deep learning (VAE + FT-Transformer) integration.
     """
 
-    AVAILABLE_MODELS = ["random_forest", "decision_tree", "logistic_regression", "naive_bayes"]
+    DEFAULT_MODELS = ["random_forest", "decision_tree", "logistic_regression", "naive_bayes"]
+    EXTENDED_MODELS = ["svm", "gradient_boosting", "mlp"]
+    AVAILABLE_MODELS = DEFAULT_MODELS + EXTENDED_MODELS
 
     def __init__(
         self,
@@ -29,10 +33,10 @@ class BaselineModelSuite:
         """
         Args:
             random_state: Deterministic seed.
-            models_to_include: List of model names to initialize. If None, all models are loaded.
+            models_to_include: List of model names to initialize. If None, default 4 models are loaded.
         """
         self.random_state = random_state
-        self.model_names = models_to_include or list(self.AVAILABLE_MODELS)
+        self.model_names = models_to_include or list(self.DEFAULT_MODELS)
         self.models: Dict[str, Any] = {}
         self.fitted_models: Dict[str, bool] = {}
 
@@ -60,6 +64,24 @@ class BaselineModelSuite:
                 )
             elif name == "naive_bayes":
                 self.models[name] = GaussianNB()
+            elif name == "svm":
+                self.models[name] = LinearSVC(
+                    random_state=self.random_state,
+                    dual="auto",
+                    max_iter=1000,
+                )
+            elif name == "gradient_boosting":
+                self.models[name] = GradientBoostingClassifier(
+                    n_estimators=50,
+                    max_depth=5,
+                    random_state=self.random_state,
+                )
+            elif name == "mlp":
+                self.models[name] = MLPClassifier(
+                    hidden_layer_sizes=(64, 32),
+                    max_iter=300,
+                    random_state=self.random_state,
+                )
             else:
                 raise ValueError(f"Unknown baseline model: {name}. Supported: {self.AVAILABLE_MODELS}")
             self.fitted_models[name] = False

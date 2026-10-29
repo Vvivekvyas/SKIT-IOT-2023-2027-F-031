@@ -73,6 +73,7 @@ This document provides the formal test case specifications for the **Hybrid ML B
 | **TC-049** | Ingestion/Pipeline | Missing pipeline code exception propagation | Invalid `PIPELINE_ROOT` | Invocation of `run_validation` or `_load` | Raises `PipelineUnavailable` without crashing API | Clean exception raised | Passed (`tests/test_data_pipeline_integration.py`) |
 | **TC-050** | Ingestion/Pipeline | End-to-end ingestion to DataPipeline fit & export | Valid CSV ingested | Ingested valid CSV passed to `DataPipeline.fit_transform` | Stratified splits bounded $[0, 1]$, schema contract exported | End-to-end transformation verified | Passed (`tests/test_data_pipeline_integration.py`) |
 | **TC-051** | Ingestion/Pipeline | Micro-batch streaming throughput benchmark | Ingestion service & pipeline fitted | 2,000 synthetic flows streamed in chunks of 100 | Throughput exceeds 1,000 flows/second, zero NaNs/infs | 2,000 flows streamed in < 2.0s (> 1,400 flows/s) | Passed (`tests/test_data_pipeline_integration.py`) |
+| **TC-052** | Baseline/Comparison | Extended model comparison benchmarking | All extended models fitted | 7 algorithms (RF, DT, LR, GNB, SVM, GB, MLP) | Comparative matrix, minority tracking, SLA compliance | Full comparison benchmarked | Passed (`tests/test_baseline_evaluation.py`) |
 
 ---
 

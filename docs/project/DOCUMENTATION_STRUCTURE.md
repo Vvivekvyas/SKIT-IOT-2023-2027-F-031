@@ -47,6 +47,7 @@ docs/
   - `WEEK_06_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 6 Data Pipeline Tests & Streaming Integration (Week 6 deliverable by Ronak).
   - `WEEK_07_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 7 Baseline Model Evaluation & Benchmarking (Week 7 deliverable by Ronak).
   - `WEEK_08_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 8 Data Pipeline Integration & Ingestion Tests (Week 8 deliverable by Ronak).
+  - `WEEK_10_MILESTONE.md`: Milestone specification, issue breakdown, and definition of done for Week 10 Deep Hybrid Model Training, Security Interface & Production Checkpoint (Week 10 deliverable by Nancy).
 - **Audience**: All team members, academic evaluators, and project mentors.
 
 ### 4. `docs/reports/`
@@ -58,6 +59,7 @@ docs/
   - `BASELINE_EVALUATION_REPORT.md`: Comprehensive baseline model benchmark report detailing classification performance, minority attack tracking, and TC-021/TC-022 latency metrics (Week 7 deliverable by Ronak).
   - `WEEK_08_DATA_PIPELINE_TEST_REPORT.md`: Exhaustive integration test report detailing backend dataset endpoint integration, automated schema detection, row sampling, and micro-batch streaming throughput (Week 8 deliverable by Ronak).
   - `MODEL_COMPARISON_REPORT.md`: Comprehensive model comparison and benchmarking report evaluating 7 machine learning paradigms, Missed-as-Normal security audit, and TC-021/TC-022 SLA latency compliance.
+  - `HYBRID_MODEL_REPORT.md`: Comprehensive technical evaluation report for the deep hybrid FT-Transformer and Deep Autoencoder architecture, Focal Loss optimization, and zero-day threat triage (Week 10 deliverable by Nancy).
 - **Audience**: Data engineers, ML researchers, reviewers.
 
 ### 5. `docs/testing/`
